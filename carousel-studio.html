@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousel Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4EFE4; --surface: #EDE6D6; --primary: #6A9170; --primaryMid: #97B89B;
+  --primarySoft: #C4D8C6; --accent: #C8A87C; --accentSoft: #E2D2B4;
+  --text: #2C2820; --textMid: #58504A; --textSoft: #8A7D72; --white: #FDFAF3;
+  --radius: 12px; --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
+#app{display:flex;flex-direction:column;height:100vh;max-width:900px;margin:0 auto}
+header{background:var(--surface);border-bottom:1.5px solid var(--primarySoft);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;box-shadow:var(--shadow)}
+.app-title{font-size:18px;font-weight:800;color:var(--primary);letter-spacing:-0.5px}
+.ratio-btns{display:flex;gap:6px}
+.ratio-btn{background:var(--bg);border:1.5px solid var(--primarySoft);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;color:var(--textMid);transition:.15s}
+.ratio-btn.active{background:var(--primary);color:var(--white);border-color:var(--primary)}
+nav{display:flex;background:var(--surface);border-bottom:1.5px solid var(--primarySoft);flex-shrink:0}
+.tab-btn{flex:1;padding:12px 4px;border:none;background:none;font-family:inherit;font-size:14px;font-weight:700;color:var(--textSoft);cursor:pointer;border-bottom:3px solid transparent;transition:.15s}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.tab{display:none;flex:1;overflow:auto;padding:14px}
+.tab.active{display:flex;flex-direction:column;gap:12px}
+
+/* Editor tab */
+.section{background:var(--surface);border-radius:var(--radius);overflow:hidden;border:1px solid var(--primarySoft)}
+.section-header{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;font-weight:700;font-size:14px;gap:8px;background:var(--surface)}
+.section-header:hover{background:var(--primarySoft)}
+.section-body{padding:12px 14px;border-top:1px solid var(--primarySoft);display:flex;flex-direction:column;gap:8px}
+.section-body.collapsed{display:none}
+.json-area{width:100%;min-height:110px;border:1.5px solid var(--primarySoft);border-radius:8px;padding:8px;font-family:monospace;font-size:12px;resize:vertical;background:var(--bg);color:var(--text)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:7px 14px;border-radius:8px;border:1.5px solid var(--primarySoft);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;min-height:36px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--primarySoft)}
+.btn.primary{background:var(--primary);color:var(--white);border-color:var(--primary)}
+.btn.primary:hover{background:var(--primaryMid)}
+.btn.accent{background:var(--accent);color:var(--white);border-color:var(--accent)}
+.btn.danger{background:#e55;color:#fff;border-color:#e55}
+.btn.small{padding:4px 10px;font-size:12px;min-height:28px}
+.slide-list{display:flex;flex-direction:column;gap:6px}
+.slide-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;cursor:pointer;border:1.5px solid transparent;transition:.15s;user-select:none}
+.slide-row:hover{border-color:var(--primarySoft)}
+.slide-row.active{border-color:var(--primary);background:var(--primarySoft)}
+.slide-row.drag-over{border-color:var(--accent);background:var(--accentSoft)}
+.drag-handle{cursor:grab;color:var(--textSoft);font-size:18px;padding:0 2px;line-height:1;flex-shrink:0}
+.drag-handle:active{cursor:grabbing}
+.type-badge{border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.badge-cover{background:#C4D8C6;color:#2C4A30}
+.badge-list{background:#D4C0E8;color:#3A2060}
+.badge-quote{background:#F0D4C0;color:#5A2820}
+.badge-content{background:#C0D8E8;color:#1A3850}
+.badge-closing{background:#F0E8C0;color:#4A3A10}
+.slide-preview-text{flex:1;font-size:13px;color:var(--textMid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slide-num{font-size:12px;color:var(--textSoft);flex-shrink:0}
+.slide-del{background:none;border:none;color:var(--textSoft);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;flex-shrink:0;transition:.15s}
+.slide-del:hover{color:#e55;background:#fee}
+.add-btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.add-slide-btn{padding:6px 12px;border-radius:8px;border:1.5px dashed var(--primarySoft);background:none;font-family:inherit;font-size:12px;font-weight:700;color:var(--primary);cursor:pointer;transition:.15s}
+.add-slide-btn:hover{background:var(--primarySoft)}
+
+/* Slide editor */
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-label{font-size:12px;font-weight:700;color:var(--textSoft);text-transform:uppercase;letter-spacing:.5px}
+.field-input{border:1.5px solid var(--primarySoft);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:14px;background:var(--bg);color:var(--text);width:100%;transition:.15s}
+.field-input:focus{outline:none;border-color:var(--primary)}
+textarea.field-input{resize:vertical;min-height:70px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 14px;border-radius:9999px;border:1.5px solid var(--primarySoft);background:var(--bg);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;color:var(--textMid);transition:.15s;min-height:36px;display:inline-flex;align-items:center}
+.chip:hover{background:var(--primarySoft)}
+.chip.active{background:var(--primary);color:var(--white);border-color:var(--primary)}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px}
+.icon-cell{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;border:1.5px solid transparent;transition:.15s;background:var(--bg)}
+.icon-cell:hover{background:var(--primarySoft)}
+.icon-cell.active{background:var(--primarySoft);border-color:var(--primary)}
+.icon-cell svg{width:20px;height:20px;stroke:var(--textMid);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-cell.active svg{stroke:var(--primary)}
+.items-list{display:flex;flex-direction:column;gap:6px}
+.item-row{display:flex;align-items:center;gap:6px}
+.item-row input{flex:1}
+.item-del{background:none;border:none;color:var(--textSoft);cursor:pointer;font-size:16px;padding:4px;border-radius:4px}
+.item-del:hover{color:#e55}
+.mini-preview{display:flex;justify-content:center;align-items:center;background:var(--bg);border-radius:var(--radius);overflow:hidden;border:1px solid var(--primarySoft)}
+.mini-preview svg{max-width:100%;height:auto;display:block}
+
+/* Preview tab */
+.preview-wrap{display:flex;justify-content:center;align-items:center;background:var(--bg);border-radius:var(--radius);overflow:hidden;position:relative;border:1px solid var(--primarySoft)}
+.preview-wrap svg{max-width:100%;height:auto;display:block}
+.preview-nav{display:flex;align-items:center;justify-content:center;gap:12px}
+.nav-btn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--primarySoft);background:var(--surface);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.15s;color:var(--textMid)}
+.nav-btn:hover{background:var(--primarySoft)}
+.nav-btn:disabled{opacity:.4;cursor:not-allowed}
+.slide-counter{font-size:14px;font-weight:700;color:var(--textMid);min-width:60px;text-align:center}
+.variant-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.variant-label{font-size:12px;font-weight:700;color:var(--textSoft);text-transform:uppercase;letter-spacing:.5px}
+.palette-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:6px}
+.palette-swatch{width:36px;height:36px;border-radius:8px;cursor:pointer;border:2.5px solid transparent;transition:.15s;position:relative;overflow:hidden}
+.palette-swatch.active{border-color:var(--primary)}
+.palette-swatch::after{content:'';position:absolute;inset:0;border-radius:6px}
+.thumb-strip{display:flex;gap:8px;overflow-x:auto;padding:6px 2px;scroll-snap-type:x mandatory}
+.thumb-strip::-webkit-scrollbar{height:4px}
+.thumb-strip::-webkit-scrollbar-thumb{background:var(--primarySoft);border-radius:2px}
+.thumb-item{flex-shrink:0;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:.15s;scroll-snap-align:start}
+.thumb-item.active{border-color:var(--primary)}
+.thumb-item svg{display:block}
+.section-label{font-size:12px;font-weight:700;color:var(--textSoft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+
+/* Download tab */
+.dl-group{background:var(--surface);border-radius:var(--radius);padding:14px;border:1px solid var(--primarySoft)}
+.dl-title{font-size:14px;font-weight:800;margin-bottom:10px;color:var(--text)}
+.progress-bar-wrap{width:100%;background:var(--primarySoft);border-radius:9999px;height:8px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;background:var(--primary);border-radius:9999px;transition:width .3s;width:0%}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;color:#fff;flex-shrink:0}
+.modal-close{background:none;border:none;color:#fff;font-size:26px;cursor:pointer;padding:6px;line-height:1}
+.modal-instruction{background:#F5C542;color:#1a1a00;border-radius:10px;padding:10px 14px;margin:0 16px 12px;font-weight:800;font-size:14px;text-align:center}
+.modal-body{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:16px;padding:0 16px 16px}
+.modal-body img{max-width:100%;border-radius:10px;display:block}
+.modal-scroll-hint{color:#aaa;font-size:13px;text-align:center;margin-bottom:4px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2C2820;color:#fff;padding:10px 20px;border-radius:9999px;font-size:14px;font-weight:700;z-index:9999;pointer-events:none;animation:toastIn .25s ease;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Toggle */
+.toggle-row{display:flex;align-items:center;gap:10px}
+.toggle-label{font-size:14px;font-weight:600;color:var(--textMid)}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:var(--primarySoft);border-radius:9999px;cursor:pointer;transition:.2s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.toggle input:checked+.toggle-slider{background:var(--primary)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--primarySoft);border-radius:3px}
+
+@media(min-width:600px){
+  header{padding:12px 20px}
+  .tab{padding:18px}
+  .app-title{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="app-title">Carousel Studio</span>
+    <div class="ratio-btns">
+      <button class="ratio-btn active" onclick="setRatio('4:5')" id="rb-45">4:5</button>
+      <button class="ratio-btn" onclick="setRatio('1:1')" id="rb-11">1:1</button>
+    </div>
+  </header>
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('editor')" id="tab-btn-editor">Szerkesztő</button>
+    <button class="tab-btn" onclick="switchTab('preview')" id="tab-btn-preview">Előnézet</button>
+    <button class="tab-btn" onclick="switchTab('download')" id="tab-btn-download">Letöltés</button>
+  </nav>
+  <main>
+    <div class="tab active" id="tab-editor">
+      <!-- JSON panel -->
+      <div class="section" id="sec-json">
+        <div class="section-header" onclick="toggleSection('sec-json')">
+          <span>JSON szerkesztő</span><span id="sec-json-arrow">▾</span>
+        </div>
+        <div class="section-body" id="sec-json-body">
+          <textarea class="json-area" id="json-area" placeholder='{"slides":[...],"stilus":"termeszetes"}'></textarea>
+          <div class="btn-row">
+            <button class="btn primary" onclick="loadJSON()">Betöltés</button>
+            <button class="btn" onclick="exportJSON()">JSON export</button>
+          </div>
+        </div>
+      </div>
+      <!-- Slide list -->
+      <div class="section">
+        <div class="section-header" style="cursor:default">
+          <span>Diák</span>
+          <div class="add-btn-row" style="margin:0">
+            <button class="add-slide-btn" onclick="addSlide('cover')">+ Borító</button>
+            <button class="add-slide-btn" onclick="addSlide('list')">+ Lista</button>
+            <button class="add-slide-btn" onclick="addSlide('quote')">+ Idézet</button>
+            <button class="add-slide-btn" onclick="addSlide('content')">+ Tartalom</button>
+            <button class="add-slide-btn" onclick="addSlide('closing')">+ Záró</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="slide-list" id="slide-list"></div>
+        </div>
+      </div>
+      <!-- Slide editor -->
+      <div class="section" id="slide-editor-section">
+        <div class="section-header" style="cursor:default"><span>Dia szerkesztése</span></div>
+        <div class="section-body" id="slide-editor-body"></div>
+      </div>
+      <!-- Mini preview -->
+      <div class="mini-preview" id="mini-preview-wrap" style="min-height:200px"></div>
+    </div>
+
+    <div class="tab" id="tab-preview">
+      <div class="preview-nav">
+        <button class="nav-btn" id="prev-btn" onclick="navigatePreview(-1)">‹</button>
+        <span class="slide-counter" id="slide-counter">1 / 1</span>
+        <button class="nav-btn" id="next-btn" onclick="navigatePreview(1)">›</button>
+      </div>
+      <div class="preview-wrap" id="preview-wrap"></div>
+      <!-- Variant + shuffle -->
+      <div class="variant-row">
+        <span class="variant-label">Változat:</span>
+        <button class="chip" id="v1-btn" onclick="setVariant(1)">V1</button>
+        <button class="chip" id="v2-btn" onclick="setVariant(2)">V2</button>
+        <button class="chip" id="v3-btn" onclick="setVariant(3)">V3</button>
+        <button class="chip" onclick="randomVariant()">🎲</button>
+        <button class="chip" onclick="shuffleAll()">🔀 Mind</button>
+      </div>
+      <!-- Show nums toggle -->
+      <div class="toggle-row">
+        <span class="toggle-label">Dia sorszámok</span>
+        <label class="toggle">
+          <input type="checkbox" id="show-nums-toggle" checked onchange="toggleShowNums()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <!-- Palette -->
+      <div>
+        <div class="section-label">Paletta</div>
+        <div class="palette-grid" id="palette-grid"></div>
+      </div>
+      <!-- Thumbnail strip -->
+      <div>
+        <div class="section-label">Diák</div>
+        <div class="thumb-strip" id="thumb-strip"></div>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-download">
+      <div class="dl-group">
+        <div class="dl-title">Aktuális dia</div>
+        <div class="btn-row">
+          <button class="btn" onclick="downloadCurrentSVG()">SVG letöltés</button>
+          <button class="btn primary" onclick="downloadCurrentPNG()" id="png-cur-btn">PNG letöltés</button>
+        </div>
+      </div>
+      <div class="dl-group">
+        <div class="dl-title">Összes dia</div>
+        <div class="btn-row">
+          <button class="btn" onclick="downloadAllSVG()">SVG ZIP letöltés</button>
+          <button class="btn primary" onclick="downloadAllPNG()" id="png-all-btn">PNG ZIP letöltés</button>
+        </div>
+        <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- iOS Modal -->
+<div class="modal-overlay" id="ios-modal" style="display:none">
+  <div class="modal-header">
+    <span style="font-weight:800;font-size:16px">Kép mentése</span>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-instruction" id="modal-instruction">Nyomj hosszan → Kép mentése</div>
+  <div class="modal-body" id="modal-body"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────
+const PAD = 80;
+const FF = "Nunito,'Helvetica Neue',Arial,sans-serif";
+const HANDLE = '@bendematyas.pszicho';
+const DIMS = { '4:5': [1080,1350], '1:1': [1080,1080] };
+
+const PALETTES = {
+  termeszetes: {bg:'#F4EFE4',surface:'#EDE6D6',primary:'#6A9170',primaryMid:'#97B89B',primarySoft:'#C4D8C6',accent:'#C8A87C',accentSoft:'#E2D2B4',text:'#2C2820',textMid:'#58504A',textSoft:'#8A7D72',white:'#FDFAF3'},
+  sotet:       {bg:'#1E1C18',surface:'#2A2720',primary:'#7AAB7F',primaryMid:'#97B89B',primarySoft:'#3A5040',accent:'#C8A87C',accentSoft:'#5A4A30',text:'#F0EBE0',textMid:'#C0B8A8',textSoft:'#8A8070',white:'#FDFAF3'},
+  minimalista: {bg:'#FAFAF8',surface:'#F2F0EB',primary:'#6A9170',primaryMid:'#97B89B',primarySoft:'#E0EBE1',accent:'#C8A87C',accentSoft:'#F0E8D8',text:'#1A1A18',textMid:'#5A5A52',textSoft:'#9A9A90',white:'#FFFFFF'},
+  homokos:     {bg:'#F5EBD8',surface:'#EDD9BC',primary:'#C4714A',primaryMid:'#D49278',primarySoft:'#EDCFB8',accent:'#8A6840',accentSoft:'#D4B88A',text:'#2A1E14',textMid:'#5A3E28',textSoft:'#8A6E52',white:'#FFF8F0'},
+  kek:         {bg:'#EEF2F5',surface:'#DDE6ED',primary:'#4A7A8A',primaryMid:'#7AA0AE',primarySoft:'#B8D0D8',accent:'#8A9E6A',accentSoft:'#C8D4B0',text:'#1A2830',textMid:'#3A5060',textSoft:'#6A8090',white:'#F8FCFD'},
+  vintage:     {bg:'#F0E8D8',surface:'#E4D8C4',primary:'#7A6A50',primaryMid:'#A89878',primarySoft:'#D4C4A8',accent:'#8A7040',accentSoft:'#C8B888',text:'#28201A',textMid:'#5A4E3A',textSoft:'#8A7A62',white:'#FDF8F0'},
+  rozsa:       {bg:'#F5E8E2',surface:'#EDD8CE',primary:'#B07A6A',primaryMid:'#C99A8A',primarySoft:'#E5C8BC',accent:'#8A9E6A',accentSoft:'#C8D4B0',text:'#2C201A',textMid:'#5A463E',textSoft:'#8A7568',white:'#FFF8F4'},
+  indigo:      {bg:'#EDE8F0',surface:'#DDD4E0',primary:'#5A4E8A',primaryMid:'#8579AE',primarySoft:'#C8C0DC',accent:'#C8A87C',accentSoft:'#E2D2B4',text:'#1A1828',textMid:'#3A3450',textSoft:'#6A6080',white:'#F8F5FC'},
+  menta:       {bg:'#E8F0EC',surface:'#D4E2DA',primary:'#4A8A78',primaryMid:'#7AAE9A',primarySoft:'#B8D8CC',accent:'#C8A87C',accentSoft:'#E2D2B4',text:'#14281E',textMid:'#2A4A3A',textSoft:'#5A7A6A',white:'#F8FCFA'},
+  ejkek:       {bg:'#0D1B2A',surface:'#1B2B3A',primary:'#4A8FD4',primaryMid:'#7AAEE0',primarySoft:'#1E3A58',accent:'#E8C84A',accentSoft:'#5A4A10',text:'#E8F0F8',textMid:'#A8C0D8',textSoft:'#6A8AA0',white:'#F0F8FF'},
+  terrakotta:  {bg:'#F2E4D8',surface:'#E8D0C0',primary:'#C4603A',primaryMid:'#D4886A',primarySoft:'#F0C8B0',accent:'#6A8A50',accentSoft:'#B8D0A0',text:'#281408',textMid:'#5A3020',textSoft:'#8A6050',white:'#FFF5EE'},
+  charcoal:    {bg:'#2A2A2A',surface:'#363636',primary:'#C8A84A',primaryMid:'#D4BC78',primarySoft:'#4A4020',accent:'#8AB0C8',accentSoft:'#284050',text:'#F0EDE0',textMid:'#C0B898',textSoft:'#888070',white:'#FDFCF8'},
+};
+
+const ICONS = {
+  coffee: '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  brain: '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-1.07-4.81A3 3 0 0 1 5 10a3 3 0 0 1 .64-1.87 2.5 2.5 0 0 1 .5-4.9z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 1.07-4.81A3 3 0 0 0 19 10a3 3 0 0 0-.64-1.87 2.5 2.5 0 0 0-.5-4.9z"/>',
+  heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+  lungs: '<path d="M12 4v8"/><path d="M8 8c-2.67 1-4 3.5-4 6 0 2 1.5 4 4 4 1.33 0 2.67-.5 4-1.5"/><path d="M16 8c2.67 1 4 3.5 4 6 0 2-1.5 4-4 4-1.33 0-2.67-.5-4-1.5"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+  leaf: '<path d="M2 22c5.33-2.67 8-7.33 8-14 0 0 6 0 12 8-5.33 2.67-12 3.33-20 6z"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  sparkle: '<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>',
+  lightbulb: '<line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  anchor: '<circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/>',
+  flower: '<circle cx="12" cy="12" r="3"/><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 14a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M2 12a4 4 0 0 1 4-4 4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4"/><path d="M14 12a4 4 0 0 1 4-4 4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4"/>',
+  pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  mirror: '<rect x="3" y="2" width="18" height="20" rx="2"/><path d="M12 6v12"/><path d="M8 10l4-4 4 4"/>',
+  bridge: '<path d="M2 20h20"/><path d="M6 20v-8"/><path d="M18 20v-8"/><path d="M6 12a6 6 0 0 1 12 0"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  mountain: '<polygon points="3 20 9 4 15 14 19 10 23 20 3 20"/>',
+  thought: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  ear: '<path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 0 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 0 1-2 2h-1"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  meditation: '<circle cx="12" cy="5" r="2"/><path d="M12 7v8"/><path d="M7 10h10"/><path d="M8 22l4-7 4 7"/>',
+  tree: '<path d="M12 22V13"/><path d="M20 13H4l8-11 8 11z"/><path d="M17 8H7l5-6 5 6z"/>',
+  butterfly: '<path d="M12 8c-2-4-8-6-8 0s6 8 8 12c2-4 8-6 8-12s-6-4-8 0z"/>',
+  journal: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  scale: '<path d="M12 2v20"/><path d="M2 12h20"/><path d="M6 4l-4 8h8L6 4z"/><path d="M18 4l-4 8h8l-4-8z"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  candle: '<path d="M12 2v4"/><rect x="9" y="6" width="6" height="14" rx="1"/><path d="M9 20H7a2 2 0 0 0-2 2h14a2 2 0 0 0-2-2h-2"/>',
+  palm: '<path d="M12 20V10"/><path d="M12 10c2-4 8-4 8-8-4 0-8 4-8 8z"/><path d="M12 10c-2-4-8-4-8-8 4 0 8 4 8 8z"/><path d="M12 10c0-4 4-8 4-12"/><path d="M12 10c0-4-4-8-4-12"/>',
+  key: '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>',
+  sprout: '<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
+  wave: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+};
+
+// ─────────────────────────────────────────
+// State
+// ─────────────────────────────────────────
+let state = {
+  slides: [],
+  stilus: 'termeszetes',
+  ratio: '4:5',
+  cur: 0,
+  showNums: true,
+  pngRunning: false
+};
+
+const SAMPLE = {
+  stilus: 'termeszetes',
+  slides: [
+    {type:'cover',variant:1,icon:'sparkle',title:'A határok ereje',subtitle:'Hogyan védjük meg az energiánkat?'},
+    {type:'list',variant:1,icon:'brain',title:'5 jel, hogy határokat kell szabnod',items:['Folyamatosan kimerültnek érzed magad','Nehéz nemet mondanod','Mások érzelmei elsöpörnek','Elveszíted önmagadat','Haragszol, de nem szólsz']},
+    {type:'quote',variant:1,icon:'heart',text:'A határok nem falak. Kapuk, amelyeket te nyitsz és csukod.',attribution:'— Ismeretlen'},
+    {type:'content',variant:1,icon:'lightbulb',title:'Hogyan kezdj el határokat szabni?',body:'Kezdd a kis lépésekkel. Mondj nemet egy olyan kérésre, amit egyébként igen-nel fogadtál volna el. Figyeld meg, mi történik benned — és körülötted.'},
+    {type:'closing',variant:1,icon:'heart',cta:'Mentsd el, ha segített!',saveText:'Kövesd az oldalt a folytatásért'}
+  ]
+};
+
+// ─────────────────────────────────────────
+// iOS detection
+// ─────────────────────────────────────────
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// ─────────────────────────────────────────
+// Typography helpers
+// ─────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function wrap(text, fontSize, maxPxWidth) {
+  if (maxPxWidth === undefined) maxPxWidth = 920;
+  const charsPerLine = Math.floor(maxPxWidth / (fontSize * 0.54));
+  return String(text||'').split(' ').reduce((acc, word) => {
+    if (!acc.length) return [word];
+    const last = acc[acc.length-1];
+    return (last+' '+word).length <= charsPerLine
+      ? [...acc.slice(0,-1), last+' '+word]
+      : [...acc, word];
+  }, []);
+}
+
+function dynFs(text, base, min, max, charsAtBase) {
+  if (charsAtBase === undefined) charsAtBase = 20;
+  const len = String(text||'').length;
+  return Math.round(Math.min(max, Math.max(min, base * (charsAtBase / Math.max(len, charsAtBase)))));
+}
+
+function manualFs(slide, sizeKey, autoFs, sizes) {
+  const map = {xl: sizes[0], l: sizes[1], m: sizes[2], s: sizes[3]};
+  return map[slide[sizeKey]] || autoFs;
+}
+
+function T(lines, x, y, fontSize, lineHeight, fill, fontWeight, anchor, opacity) {
+  if (anchor === undefined) anchor = 'start';
+  if (opacity === undefined) opacity = 1;
+  return lines.map((line, i) =>
+    `<text x="${x}" y="${y + i*fontSize*lineHeight}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${fill}" text-anchor="${anchor}" opacity="${opacity}" font-family="${FF}">${esc(line)}</text>`
+  ).join('');
+}
+
+function hdl(W, H, color, anchor, opacity) {
+  if (anchor === undefined) anchor = 'middle';
+  if (opacity === undefined) opacity = 1;
+  const x = anchor==='middle' ? W/2 : anchor==='start' ? PAD : W-PAD;
+  return `<text x="${x}" y="${H-44}" font-size="32" font-weight="600" fill="${color}" text-anchor="${anchor}" opacity="${opacity}" font-family="${FF}">${HANDLE}</text>`;
+}
+
+function renderIcon(name, cx, cy, size, color, opacity, strokeWidth) {
+  if (opacity === undefined) opacity = 1;
+  if (strokeWidth === undefined) strokeWidth = 4;
+  if (!ICONS[name]) return '';
+  const scale = size/24;
+  return `<g transform="translate(${cx-size/2} ${cy-size/2}) scale(${scale})" stroke="${color}" stroke-width="${strokeWidth/scale}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="${opacity}">${ICONS[name]}</g>`;
+}
+
+function calcBodyFs(availableHeight, bodyText, maxW, lh) {
+  if (lh === undefined) lh = 1.65;
+  for (let fs=78; fs>=44; fs-=2) {
+    if (wrap(bodyText, fs, maxW).length * fs * lh <= availableHeight) return fs;
+  }
+  return 44;
+}
+
+// ─────────────────────────────────────────
+// getProcessed
+// ─────────────────────────────────────────
+function getProcessed() {
+  const numerable = ['list','content'];
+  let count = 0;
+  const total = state.slides.filter(s => numerable.includes(s.type)).length;
+  return state.slides.map(s => {
+    if (numerable.includes(s.type)) {
+      count++;
+      return {...s, slideNum: `${count} / ${total}`};
+    }
+    return {...s};
+  });
+}
+
+// ─────────────────────────────────────────
+// COVER renderer
+// ─────────────────────────────────────────
+function renderCover(slide, W, H, p) {
+  const v = slide.variant || 1;
+  const icon = slide.icon || 'sparkle';
+  const title = slide.title || 'Cím';
+  const subtitle = slide.subtitle || '';
+
+  if (v === 1) {
+    const titleFs = dynFs(title, 120, 64, 140, 12);
+    const titleLines = wrap(title, titleFs, W - PAD*2.5);
+    const iconY = H * 0.28;
+    const titleY = H * 0.5;
+    const actualTitleH = titleLines.length * titleFs * 1.2;
+    const subtitleY = titleY + actualTitleH + 48;
+    const subFs = 44;
+    const subLines = wrap(subtitle, subFs, W - PAD*3);
+    const pillH = subLines.length * subFs * 1.4 + 32;
+    const pillW = Math.max(...subLines.map(l => l.length * subFs * 0.52), 200) + 80;
+    return `
+      <circle cx="${W}" cy="0" r="240" fill="${p.primarySoft}" opacity="0.5"/>
+      <circle cx="0" cy="${H}" r="200" fill="${p.accentSoft}" opacity="0.45"/>
+      ${renderIcon(icon, W/2, iconY, 100, p.primary, 0.25, 2.5)}
+      ${renderIcon(icon, W/2, iconY, 72, p.primary, 1, 2.5)}
+      ${T(titleLines, W/2, titleY, titleFs, 1.2, p.text, '800', 'middle')}
+      ${subtitle ? `
+        <rect x="${W/2 - pillW/2}" y="${subtitleY - subFs*0.85}" width="${pillW}" height="${pillH}" rx="9999" fill="${p.accent}" opacity="0.18"/>
+        ${T(subLines, W/2, subtitleY, subFs, 1.4, p.accent, '700', 'middle')}
+      ` : ''}
+      ${hdl(W, H, p.textSoft)}
+    `;
+  } else if (v === 2) {
+    const titleFs = dynFs(title, 110, 60, 130, 14);
+    const titleLines = wrap(title, titleFs, W - PAD*2.2 - 80);
+    const iconSize = 72;
+    const iconX = PAD + iconSize/2;
+    const iconY = PAD + iconSize/2 + 20;
+    const titleY = iconY + iconSize/2 + 60;
+    return `
+      <circle cx="${W * 0.82}" cy="${H * 0.45}" r="220" fill="${p.primarySoft}" opacity="0.3"/>
+      ${renderIcon(icon, iconX, iconY, iconSize, p.primary, 1, 2.5)}
+      <line x1="${PAD + iconSize + 20}" y1="${iconY}" x2="${W - PAD}" y2="${iconY}" stroke="${p.primary}" stroke-width="4" opacity="0.4"/>
+      ${T(titleLines, PAD, titleY, titleFs, 1.2, p.text, '800', 'start')}
+      ${subtitle ? T(wrap(subtitle, 46, W - PAD*2.2), PAD, titleY + titleLines.length * titleFs * 1.2 + 32, 46, 1.4, p.accent, '700', 'start') : ''}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  } else {
+    // V3: title in rounded box
+    const titleFs = dynFs(title, 100, 58, 120, 14);
+    const titleLines = wrap(title, titleFs, W - PAD*2.4);
+    const boxPadX = 60, boxPadY = 44;
+    const boxW = W - PAD*1.6;
+    const boxH = titleLines.length * titleFs * 1.25 + boxPadY * 2;
+    const boxX = PAD * 0.8;
+    const boxY = H * 0.38 - boxH/2;
+    const titleTextY = boxY + boxPadY + titleFs * 0.8;
+    const iconY = boxY - 70;
+    return `
+      ${renderIcon(icon, W/2, iconY, 80, p.primary, 1, 2.5)}
+      <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="24" fill="${p.primarySoft}" opacity="0.7"/>
+      ${T(titleLines, W/2, titleTextY, titleFs, 1.25, p.text, '800', 'middle')}
+      ${subtitle ? T(wrap(subtitle, 44, W - PAD*2.4), W/2, boxY + boxH + 40, 44, 1.4, p.accent, '700', 'middle') : ''}
+      ${hdl(W, H, p.textSoft)}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────
+// LIST renderer
+// ─────────────────────────────────────────
+function renderList(slide, W, H, p) {
+  const v = slide.variant || 1;
+  const items = slide.items || [];
+  const title = slide.title || '';
+  const icon = slide.icon || 'star';
+  const showNum = state.showNums && slide.slideNum;
+
+  const titleFs = 52;
+  const titleLines = wrap(title, titleFs, W - PAD*2.2);
+  const titleH = titleLines.length * titleFs * 1.25;
+  const titleY = PAD + titleFs;
+
+  const availTop = titleY + titleH + 32;
+  const availH = H - availTop - 120;
+
+  let iFs = Math.max(34, Math.min(56, Math.floor(availH / (Math.max(items.length, 1) * 1.9))));
+  iFs = manualFs(slide, 'itemsSize', iFs, [54, 48, 40, 34]);
+
+  if (v === 1) {
+    const circR = Math.max(28, iFs * 0.62);
+    const circX = PAD + circR;
+    const textX = circX + circR + 22;
+    const maxTextW = W - textX - PAD * 0.8;
+    const lh = 1.4;
+
+    let curY = availTop;
+    let itemSvg = '';
+    items.forEach((item, idx) => {
+      const lines = wrap(item, iFs, maxTextW);
+      const itemH = lines.length * iFs * lh;
+      const firstLineY = curY + iFs * 0.8;
+      const circCY = curY + iFs * 0.8 - iFs * 0.15;
+      itemSvg += `<circle cx="${circX}" cy="${circCY}" r="${circR}" fill="${p.primary}" opacity="0.15"/>`;
+      itemSvg += `<circle cx="${circX}" cy="${circCY}" r="${circR}" fill="none" stroke="${p.primary}" stroke-width="2.5" opacity="0.5"/>`;
+      itemSvg += `<text x="${circX}" y="${circCY + iFs*0.38}" font-size="${Math.round(iFs*0.72)}" font-weight="800" fill="${p.primary}" text-anchor="middle" font-family="${FF}">${idx+1}</text>`;
+      itemSvg += T(lines, textX, firstLineY, iFs, lh, p.text, '600');
+      curY += itemH + 20;
+    });
+
+    return `
+      ${showNum ? `<text x="${W-PAD}" y="${PAD+40}" font-size="34" font-weight="700" fill="${p.textSoft}" text-anchor="end" font-family="${FF}" opacity="0.7">${esc(slide.slideNum)}</text>` : ''}
+      ${T(titleLines, PAD, titleY, titleFs, 1.25, p.text, '800')}
+      ${itemSvg}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  } else if (v === 2) {
+    const cardPadX = 28, cardPadY = 20;
+    const cardW = W - PAD * 2;
+    const lh = 1.4;
+    let curY = availTop;
+    let itemSvg = '';
+
+    items.forEach((item, idx) => {
+      const lines = wrap(item, iFs, cardW - cardPadX * 2 - iFs - 20);
+      const cardH = lines.length * iFs * lh + cardPadY * 2;
+      const alt = idx % 2 === 0;
+      const cardFill = alt ? p.primarySoft : p.surface;
+      itemSvg += `<rect x="${PAD}" y="${curY}" width="${cardW}" height="${cardH}" rx="14" fill="${cardFill}" opacity="0.7"/>`;
+      itemSvg += `<text x="${PAD + cardPadX}" y="${curY + cardPadY + iFs*0.78}" font-size="${Math.round(iFs*0.72)}" font-weight="800" fill="${p.primary}" font-family="${FF}" opacity="0.5">${idx+1}.</text>`;
+      itemSvg += T(lines, PAD + cardPadX + iFs + 8, curY + cardPadY + iFs*0.78, iFs, lh, p.text, '600');
+      curY += cardH + 10;
+    });
+
+    return `
+      ${showNum ? `<text x="${W-PAD}" y="${PAD+40}" font-size="34" font-weight="700" fill="${p.textSoft}" text-anchor="end" font-family="${FF}" opacity="0.7">${esc(slide.slideNum)}</text>` : ''}
+      ${T(titleLines, PAD, titleY, titleFs, 1.25, p.text, '800')}
+      ${itemSvg}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  } else {
+    // V3: vertical bar + accent dot
+    const barX = PAD;
+    const textX = PAD + 28;
+    const lh = 1.4;
+    let curY = availTop;
+    let itemSvg = '';
+    const totalH = items.reduce((acc, item) => {
+      return acc + wrap(item, iFs, W - textX - PAD * 0.8).length * iFs * lh + 16;
+    }, 0);
+    itemSvg += `<line x1="${barX + 6}" y1="${availTop - 10}" x2="${barX + 6}" y2="${availTop + totalH - 16}" stroke="${p.primary}" stroke-width="3" opacity="0.3"/>`;
+
+    items.forEach((item, idx) => {
+      const lines = wrap(item, iFs, W - textX - PAD * 0.8);
+      const itemH = lines.length * iFs * lh;
+      const dotY = curY + iFs * 0.75;
+      itemSvg += `<circle cx="${barX + 6}" cy="${dotY}" r="9" fill="${p.accent}" opacity="0.9"/>`;
+      itemSvg += T(lines, textX + 18, curY + iFs * 0.78, iFs, lh, p.text, '600');
+      curY += itemH + 16;
+    });
+
+    return `
+      ${showNum ? `<text x="${W-PAD}" y="${PAD+40}" font-size="34" font-weight="700" fill="${p.textSoft}" text-anchor="end" font-family="${FF}" opacity="0.7">${esc(slide.slideNum)}</text>` : ''}
+      ${T(titleLines, PAD, titleY, titleFs, 1.25, p.text, '800')}
+      ${itemSvg}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────
+// QUOTE renderer
+// ─────────────────────────────────────────
+function renderQuote(slide, W, H, p) {
+  const v = slide.variant || 1;
+  const text = slide.text || '';
+  const attribution = slide.attribution || '';
+  const icon = slide.icon || 'heart';
+
+  let qFs = Math.round(Math.min(140, Math.max(52, 110*(20/Math.max(text.length, 20)))));
+  for (let i = 0; i < 6; i++) {
+    if (wrap(text, qFs, W - PAD*2).length * qFs * 1.3 < H * 0.58) break;
+    qFs = Math.round(qFs * 0.88);
+  }
+  qFs = manualFs(slide, 'textSize', qFs, [130, 100, 78, 60]);
+
+  const qLines = wrap(text, qFs, W - PAD*2.2);
+  const attrFs = Math.max(36, qFs * 0.52);
+
+  if (v === 1) {
+    const totalH = qLines.length * qFs * 1.3 + attrFs * 2;
+    const startY = H/2 - totalH/2 + qFs;
+    return `
+      <rect width="${W}" height="${H}" fill="${p.primary}"/>
+      ${renderIcon(icon, W * 0.85, H * 0.15, 180, p.white, 0.07, 1.5)}
+      <text x="${PAD * 0.8}" y="${startY - qFs * 0.5}" font-size="${qFs*3.5}" font-weight="800" fill="${p.white}" opacity="0.12" font-family="${FF}">"</text>
+      ${T(qLines, W/2, startY, qFs, 1.3, p.white, '700', 'middle')}
+      ${attribution ? `<text x="${W/2}" y="${startY + qLines.length * qFs * 1.3 + attrFs * 1.3}" font-size="${attrFs}" font-weight="600" fill="${p.white}" text-anchor="middle" opacity="0.7" font-family="${FF}">${esc(attribution)}</text>` : ''}
+      ${hdl(W, H, p.white, 'middle', 0.6)}
+    `;
+  } else if (v === 2) {
+    const boxPad = 56;
+    const boxW = W - PAD * 1.4;
+    const boxH = qLines.length * qFs * 1.3 + boxPad * 2 + (attribution ? attrFs * 2.5 : 0);
+    const boxX = PAD * 0.7;
+    const boxY = H/2 - boxH/2;
+    const textStartY = boxY + boxPad + qFs * 0.85;
+    return `
+      <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="24" fill="${p.primarySoft}" opacity="0.7"/>
+      <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="24" fill="none" stroke="${p.primary}" stroke-width="2.5" opacity="0.25"/>
+      <text x="${boxX + 32}" y="${boxY + boxPad * 0.7}" font-size="${qFs*2.2}" font-weight="800" fill="${p.primary}" opacity="0.2" font-family="${FF}">"</text>
+      ${T(qLines, W/2, textStartY, qFs, 1.3, p.text, '700', 'middle')}
+      ${attribution ? `<text x="${W/2}" y="${textStartY + qLines.length * qFs * 1.3 + attrFs * 1.2}" font-size="${attrFs}" font-weight="600" fill="${p.textMid}" text-anchor="middle" opacity="0.8" font-family="${FF}">${esc(attribution)}</text>` : ''}
+      ${hdl(W, H, p.textSoft)}
+    `;
+  } else {
+    // V3: left primary bar + icon bottom-right
+    const barW = 10;
+    const textX = PAD + barW + 28;
+    const maxW = W - textX - PAD * 0.8;
+    const qLinesV3 = wrap(text, qFs, maxW);
+    const totalH = qLinesV3.length * qFs * 1.3;
+    const startY = H/2 - totalH/2 + qFs;
+    return `
+      <rect x="${PAD}" y="${startY - qFs * 1.1}" width="${barW}" height="${totalH + qFs * 0.5}" rx="${barW/2}" fill="${p.primary}" opacity="0.85"/>
+      ${T(qLinesV3, textX, startY, qFs, 1.3, p.text, '700')}
+      ${attribution ? `<text x="${textX}" y="${startY + qLinesV3.length * qFs * 1.3 + attrFs}" font-size="${attrFs}" font-weight="600" fill="${p.textMid}" opacity="0.8" font-family="${FF}">${esc(attribution)}</text>` : ''}
+      ${renderIcon(icon, W - PAD - 50, H - 200, 110, p.accent, 0.18, 2)}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────
+// CONTENT renderer
+// ─────────────────────────────────────────
+function renderContent(slide, W, H, p) {
+  const v = slide.variant || 1;
+  const title = slide.title || '';
+  const body = slide.body || '';
+  const icon = slide.icon || 'lightbulb';
+  const showNum = state.showNums && slide.slideNum;
+
+  const tFs = manualFs(slide, 'titleSize', dynFs(title, 88, 52, 100, 14), [88, 72, 58, 46]);
+  const titleLines = wrap(title, tFs, W - PAD * 2.2);
+  const titleY = PAD + tFs + 20;
+
+  const bodyTop = titleY + titleLines.length * tFs * 1.2 + 40;
+  const availBodyH = H - bodyTop - 130;
+  let bFs = calcBodyFs(availBodyH, body, W - PAD * 2.2);
+  bFs = manualFs(slide, 'bodySize', bFs, [78, 64, 52, 42]);
+  const bodyLines = wrap(body, bFs, W - PAD * 2.2);
+
+  if (v === 1) {
+    const barTop = titleY - tFs * 0.76;
+    const barH = titleLines.length * tFs * 1.2 + tFs * 0.36;
+    const barX = PAD - 22;
+    return `
+      ${showNum ? `<text x="${W-PAD}" y="${PAD+44}" font-size="34" font-weight="700" fill="${p.textSoft}" text-anchor="end" font-family="${FF}" opacity="0.7">${esc(slide.slideNum)}</text>` : ''}
+      <rect x="${barX}" y="${barTop}" width="10" height="${barH}" rx="5" fill="${p.accent}" opacity="0.85"/>
+      ${T(titleLines, PAD, titleY, tFs, 1.2, p.text, '800')}
+      ${T(bodyLines, PAD, bodyTop + bFs * 0.8, bFs, 1.65, p.textMid, '400')}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  } else if (v === 2) {
+    const lineY = titleY + titleLines.length * tFs * 1.2 + 16;
+    const boxY = lineY + 28;
+    const boxPad = 36;
+    const boxW = W - PAD * 2;
+    const boxH = bodyLines.length * bFs * 1.65 + boxPad * 2;
+    return `
+      ${showNum ? `<text x="${W-PAD}" y="${PAD+44}" font-size="34" font-weight="700" fill="${p.textSoft}" text-anchor="end" font-family="${FF}" opacity="0.7">${esc(slide.slideNum)}</text>` : ''}
+      ${T(titleLines, PAD, titleY, tFs, 1.2, p.text, '800')}
+      <line x1="${PAD}" y1="${lineY}" x2="${W - PAD}" y2="${lineY}" stroke="${p.accent}" stroke-width="4" opacity="0.6"/>
+      <rect x="${PAD}" y="${boxY}" width="${boxW}" height="${boxH}" rx="16" fill="${p.surface}" opacity="0.8"/>
+      ${T(bodyLines, PAD + boxPad, boxY + boxPad + bFs * 0.8, bFs, 1.65, p.textMid, '400')}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  } else {
+    // V3: primary bar + accent circle + ghost icon bg
+    const barTop = titleY - tFs * 0.76;
+    const barH = titleLines.length * tFs * 1.2 + tFs * 0.36;
+    const barX = PAD - 22;
+    const accentCX = barX + 4;
+    const accentCY = barTop - 18;
+    return `
+      ${renderIcon(icon, W * 0.8, H * 0.42, 200, p.primary, 0.07, 1.5)}
+      ${showNum ? `<text x="${W-PAD}" y="${PAD+44}" font-size="34" font-weight="700" fill="${p.textSoft}" text-anchor="end" font-family="${FF}" opacity="0.7">${esc(slide.slideNum)}</text>` : ''}
+      <rect x="${barX}" y="${barTop}" width="10" height="${barH}" rx="5" fill="${p.primary}" opacity="0.85"/>
+      <circle cx="${accentCX + 4}" cy="${accentCY}" r="14" fill="${p.accent}" opacity="0.7"/>
+      ${T(titleLines, PAD, titleY, tFs, 1.2, p.text, '800')}
+      ${T(bodyLines, PAD, bodyTop + bFs * 0.8, bFs, 1.65, p.textMid, '400')}
+      ${hdl(W, H, p.textSoft, 'start')}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────
+// CLOSING renderer
+// ─────────────────────────────────────────
+function renderClosing(slide, W, H, p) {
+  const v = slide.variant || 1;
+  const cta = slide.cta || 'Kövesd az oldalt!';
+  const saveText = slide.saveText || '';
+  const icon = slide.icon || 'heart';
+
+  const ctaFs = dynFs(cta, 110, 60, 130, 12);
+  const ctaLines = wrap(cta, ctaFs, W - PAD * 2.2);
+  const saveFs = 50;
+
+  if (v === 1) {
+    const ctaY = H * 0.35;
+    const actualCtaH = ctaLines.length * ctaFs * 1.25;
+    const handlePillY = H - 110;
+    const pillW = HANDLE.length * 32 * 0.55 + 80;
+    const pillH = 70;
+    return `
+      <rect x="0" y="0" width="${W}" height="8" rx="4" fill="${p.primary}" opacity="0.7"/>
+      <rect x="0" y="0" width="${W}" height="4" fill="${p.accent}" opacity="0.5"/>
+      <rect x="0" y="${H-8}" width="${W}" height="8" rx="4" fill="${p.primary}" opacity="0.7"/>
+      <rect x="0" y="${H-4}" width="${W}" height="4" fill="${p.accent}" opacity="0.5"/>
+      ${renderIcon(icon, W/2, ctaY - 90, 68, p.primary, 1, 2.5)}
+      ${T(ctaLines, W/2, ctaY, ctaFs, 1.25, p.text, '800', 'middle')}
+      ${saveText ? T(wrap(saveText, saveFs, W - PAD*2.2), W/2, ctaY + actualCtaH + saveFs + 10, saveFs, 1.4, p.textMid, '600', 'middle') : ''}
+      <rect x="${W/2 - pillW/2}" y="${handlePillY - pillH*0.75}" width="${pillW}" height="${pillH}" rx="9999" fill="${p.primary}" opacity="0.15"/>
+      <rect x="${W/2 - pillW/2}" y="${handlePillY - pillH*0.75}" width="${pillW}" height="${pillH}" rx="9999" fill="none" stroke="${p.primary}" stroke-width="2.5" opacity="0.4"/>
+      ${hdl(W, H, p.primary)}
+    `;
+  } else if (v === 2) {
+    const bandH = H * 0.42;
+    const ctaY = bandH * 0.52 + ctaFs;
+    const actualCtaH = ctaLines.length * ctaFs * 1.25;
+    return `
+      <rect width="${W}" height="${bandH}" fill="${p.primary}"/>
+      ${renderIcon(icon, W * 0.88, bandH * 0.3, 160, p.white, 0.1, 2)}
+      ${T(ctaLines, W/2, ctaY, ctaFs, 1.25, p.white, '800', 'middle')}
+      ${saveText ? T(wrap(saveText, saveFs, W - PAD*2.2), W/2, bandH + saveFs + 40, saveFs, 1.4, p.textMid, '600', 'middle') : ''}
+      ${hdl(W, H, p.primary)}
+    `;
+  } else {
+    // V3: CTA + accent divider + handle pill
+    const ctaY = H * 0.32 + ctaFs;
+    const actualCtaH = ctaLines.length * ctaFs * 1.25;
+    const divY = ctaY + actualCtaH + 40;
+    const handleY = divY + 80;
+    const pillW = HANDLE.length * 32 * 0.55 + 80;
+    const pillH = 70;
+    return `
+      ${renderIcon(icon, W/2, H * 0.14, 70, p.primary, 1, 2.5)}
+      ${T(ctaLines, W/2, ctaY, ctaFs, 1.25, p.text, '800', 'middle')}
+      ${saveText ? T(wrap(saveText, saveFs, W - PAD*2.2), W/2, ctaY + actualCtaH + 16, saveFs, 1.4, p.textMid, '600', 'middle') : ''}
+      <line x1="${W/2 - 80}" y1="${divY}" x2="${W/2 + 80}" y2="${divY}" stroke="${p.accent}" stroke-width="4" opacity="0.7"/>
+      <circle cx="${W/2}" cy="${divY}" r="6" fill="${p.accent}" opacity="0.9"/>
+      <rect x="${W/2 - pillW/2}" y="${handleY - pillH*0.75}" width="${pillW}" height="${pillH}" rx="9999" fill="${p.primary}" opacity="0.12"/>
+      <rect x="${W/2 - pillW/2}" y="${handleY - pillH*0.75}" width="${pillW}" height="${pillH}" rx="9999" fill="none" stroke="${p.primary}" stroke-width="2.5" opacity="0.5"/>
+      ${hdl(W, H, p.primary)}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────
+// Main renderSlide dispatcher
+// ─────────────────────────────────────────
+function renderSlide(slide, W, H, palette) {
+  try {
+    const bg = `<rect width="${W}" height="${H}" fill="${palette.bg}"/>`;
+    switch(slide.type) {
+      case 'cover':   return bg + renderCover(slide, W, H, palette);
+      case 'list':    return bg + renderList(slide, W, H, palette);
+      case 'quote':   return bg + renderQuote(slide, W, H, palette);
+      case 'content': return bg + renderContent(slide, W, H, palette);
+      case 'closing': return bg + renderClosing(slide, W, H, palette);
+      default:        return bg;
+    }
+  } catch(e) {
+    console.error('renderSlide error', e);
+    return `<rect width="${W}" height="${H}" fill="#eee"/><text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="40" fill="#999" font-family="${FF}">Render error</text>`;
+  }
+}
+
+function mkSVGFull(slide, W, H, palette) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+  <defs><style>@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');</style></defs>
+  ${renderSlide(slide, W, H, palette)}
+</svg>`;
+}
+
+// ─────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────
+function toast(msg, duration) {
+  if (duration === undefined) duration = 2500;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ─────────────────────────────────────────
+// CRC32 & ZIP builder
+// ─────────────────────────────────────────
+function _crc32(data) {
+  const table = _crc32.table || (_crc32.table = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c;
+    }
+    return t;
+  })());
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function makeZip(files) {
+  const enc = new TextEncoder();
+  const localHeaders = [];
+  const centralDir = [];
+  let offset = 0;
+
+  for (const file of files) {
+    const nameBytes = enc.encode(file.name);
+    const data = file.content;
+    const crc = _crc32(data);
+    const dosDate = 0x5421; // 2022-01-01
+    const dosTime = 0x0000;
+
+    // Local file header
+    const lh = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); // signature
+    lv.setUint16(4, 20, true);         // version needed
+    lv.setUint16(6, 0, true);          // flags
+    lv.setUint16(8, 0, true);          // compression: stored
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    lh.set(nameBytes, 30);
+
+    localHeaders.push({lh, data});
+
+    // Central directory entry
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true); // signature
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    cd.set(nameBytes, 46);
+    centralDir.push(cd);
+
+    offset += lh.length + data.length;
+  }
+
+  const cdOffset = offset;
+  const cdSize = centralDir.reduce((s, c) => s + c.length, 0);
+
+  // End of central directory
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, cdOffset, true);
+  ev.setUint16(20, 0, true);
+
+  const total = localHeaders.reduce((s, f) => s + f.lh.length + f.data.length, 0) + cdSize + eocd.length;
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for (const f of localHeaders) {
+    out.set(f.lh, pos); pos += f.lh.length;
+    out.set(f.data, pos); pos += f.data.length;
+  }
+  for (const c of centralDir) { out.set(c, pos); pos += c.length; }
+  out.set(eocd, pos);
+  return out;
+}
+
+// ─────────────────────────────────────────
+// PNG export helpers
+// ─────────────────────────────────────────
+function svgToPNG(svgString, W, H) {
+  return new Promise((resolve, reject) => {
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    const blob = new Blob([svgString], {type: 'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(b => b ? resolve(b) : reject('canvas toBlob failed'), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject('img load failed'); };
+    img.src = url;
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ─────────────────────────────────────────
+// Download actions
+// ─────────────────────────────────────────
+async function downloadCurrentSVG() {
+  const slides = getProcessed();
+  const slide = slides[state.cur];
+  if (!slide) return;
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+  const svgStr = mkSVGFull(slide, W, H, palette);
+  const blob = new Blob([svgStr], {type: 'image/svg+xml'});
+  downloadBlob(blob, `slide-${state.cur + 1}.svg`);
+  toast('SVG letöltve!');
+}
+
+async function downloadCurrentPNG() {
+  if (state.pngRunning) return;
+  const slides = getProcessed();
+  const slide = slides[state.cur];
+  if (!slide) return;
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+  const svgStr = mkSVGFull(slide, W, H, palette);
+
+  if (isIOS) {
+    try {
+      const blob = await svgToPNG(svgStr, W, H);
+      const url = URL.createObjectURL(blob);
+      showIOSModal([{url, name: `slide-${state.cur + 1}.png`}], false);
+    } catch(e) { toast('Hiba a PNG generáláskor'); }
+    return;
+  }
+
+  state.pngRunning = true;
+  document.getElementById('png-cur-btn').textContent = 'Generálás...';
+  try {
+    const blob = await svgToPNG(svgStr, W, H);
+    downloadBlob(blob, `slide-${state.cur + 1}.png`);
+    toast('PNG letöltve!');
+  } catch(e) { toast('Hiba a PNG generáláskor'); }
+  state.pngRunning = false;
+  document.getElementById('png-cur-btn').textContent = 'PNG letöltés';
+}
+
+async function downloadAllSVG() {
+  const slides = getProcessed();
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+  const enc = new TextEncoder();
+  const files = slides.map((slide, i) => ({
+    name: `slide-${String(i+1).padStart(2,'0')}.svg`,
+    content: enc.encode(mkSVGFull(slide, W, H, palette))
+  }));
+  const zip = makeZip(files);
+  const blob = new Blob([zip], {type: 'application/zip'});
+  downloadBlob(blob, 'carousel-slides.zip');
+  toast('SVG ZIP letöltve!');
+}
+
+async function downloadAllPNG() {
+  if (state.pngRunning) return;
+  state.pngRunning = true;
+  const slides = getProcessed();
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+
+  const progressWrap = document.getElementById('progress-wrap');
+  const progressBar = document.getElementById('progress-bar');
+  progressWrap.style.display = '';
+  progressBar.style.width = '0%';
+
+  const btn = document.getElementById('png-all-btn');
+  btn.textContent = 'Generálás...';
+
+  if (isIOS) {
+    const urls = [];
+    for (let i = 0; i < slides.length; i++) {
+      const svgStr = mkSVGFull(slides[i], W, H, palette);
+      try {
+        const blob = await svgToPNG(svgStr, W, H);
+        urls.push({url: URL.createObjectURL(blob), name: `slide-${i+1}.png`});
+      } catch(e) {}
+      progressBar.style.width = `${Math.round((i+1)/slides.length*100)}%`;
+    }
+    state.pngRunning = false;
+    btn.textContent = 'PNG ZIP letöltés';
+    progressWrap.style.display = 'none';
+    showIOSModal(urls, true);
+    return;
+  }
+
+  try {
+    const pngFiles = [];
+    for (let i = 0; i < slides.length; i++) {
+      const svgStr = mkSVGFull(slides[i], W, H, palette);
+      const blob = await svgToPNG(svgStr, W, H);
+      const buf = await blob.arrayBuffer();
+      pngFiles.push({
+        name: `slide-${String(i+1).padStart(2,'0')}.png`,
+        content: new Uint8Array(buf)
+      });
+      progressBar.style.width = `${Math.round((i+1)/slides.length*100)}%`;
+    }
+    const zip = makeZip(pngFiles);
+    const blob2 = new Blob([zip], {type: 'application/zip'});
+    downloadBlob(blob2, 'carousel-slides-png.zip');
+    toast('PNG ZIP letöltve!');
+  } catch(e) { toast('Hiba a PNG generáláskor'); }
+
+  state.pngRunning = false;
+  btn.textContent = 'PNG ZIP letöltés';
+  progressWrap.style.display = 'none';
+}
+
+// ─────────────────────────────────────────
+// iOS Modal
+// ─────────────────────────────────────────
+function showIOSModal(items, isGallery) {
+  const modal = document.getElementById('ios-modal');
+  const body = document.getElementById('modal-body');
+  const instr = document.getElementById('modal-instruction');
+  body.innerHTML = '';
+  if (isGallery) {
+    instr.textContent = 'Nyomj hosszan minden képre → Kép mentése';
+    const hint = document.createElement('div');
+    hint.className = 'modal-scroll-hint';
+    hint.textContent = `${items.length} kép — görgess le mindegyikhez`;
+    body.appendChild(hint);
+    for (const item of items) {
+      const img = document.createElement('img');
+      img.src = item.url;
+      body.appendChild(img);
+    }
+  } else {
+    instr.textContent = 'Nyomj hosszan → Kép mentése';
+    const img = document.createElement('img');
+    img.src = items[0].url;
+    body.appendChild(img);
+  }
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('ios-modal').style.display = 'none';
+}
+
+// ─────────────────────────────────────────
+// Tab switching
+// ─────────────────────────────────────────
+function switchTab(name) {
+  ['editor','preview','download'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === name);
+    document.getElementById('tab-btn-'+t).classList.toggle('active', t === name);
+  });
+  if (name === 'preview') renderPreviewTab();
+  if (name === 'editor') renderMiniPreview();
+}
+
+// ─────────────────────────────────────────
+// JSON panel
+// ─────────────────────────────────────────
+function toggleSection(id) {
+  const body = document.getElementById(id + '-body');
+  const arrow = document.getElementById(id + '-arrow');
+  const collapsed = body.classList.toggle('collapsed');
+  if (arrow) arrow.textContent = collapsed ? '▸' : '▾';
+}
+
+function loadJSON() {
+  const raw = document.getElementById('json-area').value.trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.slides && Array.isArray(parsed.slides)) {
+      state.slides = parsed.slides;
+    }
+    if (parsed.stilus && PALETTES[parsed.stilus]) state.stilus = parsed.stilus;
+    if (parsed.ratio && DIMS[parsed.ratio]) state.ratio = parsed.ratio;
+    state.cur = 0;
+    renderAll();
+    toast('JSON betöltve!');
+  } catch(e) { toast('Hibás JSON formátum!'); }
+}
+
+function exportJSON() {
+  const out = JSON.stringify({slides: state.slides, stilus: state.stilus, ratio: state.ratio}, null, 2);
+  document.getElementById('json-area').value = out;
+  toast('JSON exportálva!');
+}
+
+// ─────────────────────────────────────────
+// Slide list rendering
+// ─────────────────────────────────────────
+function typePreviewText(slide) {
+  switch(slide.type) {
+    case 'cover': return slide.title || '(nincs cím)';
+    case 'list': return slide.title || (slide.items && slide.items[0]) || '(nincs elem)';
+    case 'quote': return slide.text || '(nincs idézet)';
+    case 'content': return slide.title || '(nincs cím)';
+    case 'closing': return slide.cta || '(nincs CTA)';
+    default: return slide.type;
+  }
+}
+
+function getBadgeClass(type) {
+  return 'type-badge badge-' + (type || 'cover');
+}
+
+let dragSrcIdx = null;
+
+function renderSlideList() {
+  const list = document.getElementById('slide-list');
+  list.innerHTML = '';
+  state.slides.forEach((slide, i) => {
+    const row = document.createElement('div');
+    row.className = 'slide-row' + (i === state.cur ? ' active' : '');
+    row.draggable = true;
+    row.dataset.idx = i;
+
+    row.innerHTML = `
+      <span class="drag-handle" title="Húzás">⠿</span>
+      <span class="${getBadgeClass(slide.type)}">${slide.type}</span>
+      <span class="slide-preview-text">${typePreviewText(slide)}</span>
+      <span class="slide-num">${i+1}</span>
+      <button class="slide-del" onclick="deleteSlide(${i})" title="Törlés">✕</button>
+    `;
+
+    row.addEventListener('click', (e) => {
+      if (e.target.classList.contains('slide-del')) return;
+      state.cur = i;
+      renderSlideList();
+      renderSlideEditor();
+      renderMiniPreview();
+    });
+
+    // Drag & drop
+    row.addEventListener('dragstart', (e) => {
+      dragSrcIdx = i;
+      e.dataTransfer.effectAllowed = 'move';
+      row.style.opacity = '0.4';
+    });
+    row.addEventListener('dragend', () => { row.style.opacity = '1'; });
+    row.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (dragSrcIdx === null || dragSrcIdx === i) return;
+      const moved = state.slides.splice(dragSrcIdx, 1)[0];
+      state.slides.splice(i, 0, moved);
+      state.cur = i;
+      dragSrcIdx = null;
+      renderAll();
+    });
+
+    list.appendChild(row);
+  });
+}
+
+function addSlide(type) {
+  const defaults = {
+    cover: {type:'cover',variant:1,icon:'sparkle',title:'Új borító',subtitle:''},
+    list: {type:'list',variant:1,icon:'star',title:'Új lista',items:['1. elem','2. elem','3. elem']},
+    quote: {type:'quote',variant:1,icon:'heart',text:'Idézet szövege',attribution:'— Szerző'},
+    content: {type:'content',variant:1,icon:'lightbulb',title:'Új tartalom',body:'A tartalom szövege itt jelenik meg.'},
+    closing: {type:'closing',variant:1,icon:'heart',cta:'Kövesd az oldalt!',saveText:''}
+  };
+  state.slides.push({...defaults[type]});
+  state.cur = state.slides.length - 1;
+  renderAll();
+  toast(`${type} dia hozzáadva`);
+}
+
+function deleteSlide(i) {
+  if (state.slides.length <= 1) { toast('Legalább egy dia szükséges!'); return; }
+  state.slides.splice(i, 1);
+  state.cur = Math.min(state.cur, state.slides.length - 1);
+  renderAll();
+  toast('Dia törölve');
+}
+
+// ─────────────────────────────────────────
+// Icon grid builder
+// ─────────────────────────────────────────
+function buildIconGrid(currentIcon, onSelect) {
+  const grid = document.createElement('div');
+  grid.className = 'icon-grid';
+  Object.keys(ICONS).forEach(name => {
+    const cell = document.createElement('div');
+    cell.className = 'icon-cell' + (name === currentIcon ? ' active' : '');
+    cell.title = name;
+    cell.innerHTML = `<svg viewBox="0 0 24 24">${ICONS[name]}</svg>`;
+    cell.addEventListener('click', () => {
+      onSelect(name);
+      grid.querySelectorAll('.icon-cell').forEach(c => c.classList.remove('active'));
+      cell.classList.add('active');
+    });
+    grid.appendChild(cell);
+  });
+  return grid;
+}
+
+// ─────────────────────────────────────────
+// Slide editor
+// ─────────────────────────────────────────
+function renderSlideEditor() {
+  const slide = state.slides[state.cur];
+  if (!slide) { document.getElementById('slide-editor-body').innerHTML = '<p style="color:var(--textSoft);font-size:13px">Nincs kiválasztott dia.</p>'; return; }
+
+  const body = document.getElementById('slide-editor-body');
+  body.innerHTML = '';
+
+  const update = (key, val) => { state.slides[state.cur][key] = val; renderMiniPreview(); scheduleThumbUpdate(); };
+
+  // Type chips
+  const typeGroup = mkFieldGroup('Típus');
+  const typeChips = document.createElement('div');
+  typeChips.className = 'chips';
+  ['cover','list','quote','content','closing'].forEach(t => {
+    const chip = mkChip(t, t === slide.type, () => {
+      const old = state.slides[state.cur];
+      const defaults = {
+        cover: {type:'cover',variant:1,icon:old.icon||'sparkle',title:old.title||'Borító',subtitle:''},
+        list: {type:'list',variant:1,icon:old.icon||'star',title:old.title||'Lista',items:['1. elem']},
+        quote: {type:'quote',variant:1,icon:old.icon||'heart',text:old.text||'Idézet',attribution:''},
+        content: {type:'content',variant:1,icon:old.icon||'lightbulb',title:old.title||'Tartalom',body:old.body||''},
+        closing: {type:'closing',variant:1,icon:old.icon||'heart',cta:'Kövesd az oldalt!',saveText:''}
+      };
+      state.slides[state.cur] = defaults[t];
+      renderSlideEditor();
+      renderMiniPreview();
+    });
+    typeChips.appendChild(chip);
+  });
+  typeGroup.appendChild(typeChips);
+  body.appendChild(typeGroup);
+
+  // Variant chips
+  const varGroup = mkFieldGroup('Változat');
+  const varChips = document.createElement('div');
+  varChips.className = 'chips';
+  [1,2,3].forEach(v => {
+    varChips.appendChild(mkChip('V'+v, (slide.variant||1) === v, () => { update('variant', v); renderSlideEditor(); }));
+  });
+  varGroup.appendChild(varChips);
+  body.appendChild(varGroup);
+
+  // Type-specific fields
+  if (slide.type === 'cover') {
+    body.appendChild(mkTextInput('Cím', slide.title||'', v => update('title', v)));
+    body.appendChild(mkTextInput('Alcím', slide.subtitle||'', v => update('subtitle', v)));
+  } else if (slide.type === 'list') {
+    body.appendChild(mkTextInput('Cím', slide.title||'', v => update('title', v)));
+    body.appendChild(mkItemsEditor(slide, update));
+    body.appendChild(mkSizeChips('Elemek mérete', slide, 'itemsSize', update));
+  } else if (slide.type === 'quote') {
+    body.appendChild(mkTextarea('Idézet', slide.text||'', v => update('text', v)));
+    body.appendChild(mkTextInput('Forrás', slide.attribution||'', v => update('attribution', v)));
+    body.appendChild(mkSizeChips('Szöveg mérete', slide, 'textSize', update));
+  } else if (slide.type === 'content') {
+    body.appendChild(mkTextInput('Cím', slide.title||'', v => update('title', v)));
+    body.appendChild(mkTextarea('Tartalom', slide.body||'', v => update('body', v)));
+    body.appendChild(mkSizeChips('Cím mérete', slide, 'titleSize', update));
+    body.appendChild(mkSizeChips('Szöveg mérete', slide, 'bodySize', update));
+  } else if (slide.type === 'closing') {
+    body.appendChild(mkTextInput('CTA szöveg', slide.cta||'', v => update('cta', v)));
+    body.appendChild(mkTextInput('Mentési szöveg', slide.saveText||'', v => update('saveText', v)));
+  }
+
+  // Icon selector
+  const iconGroup = mkFieldGroup('Ikon');
+  iconGroup.appendChild(buildIconGrid(slide.icon, name => { update('icon', name); }));
+  body.appendChild(iconGroup);
+}
+
+function mkFieldGroup(label) {
+  const g = document.createElement('div');
+  g.className = 'field-group';
+  const l = document.createElement('div');
+  l.className = 'field-label';
+  l.textContent = label;
+  g.appendChild(l);
+  return g;
+}
+
+function mkChip(label, active, onClick) {
+  const c = document.createElement('button');
+  c.className = 'chip' + (active ? ' active' : '');
+  c.textContent = label;
+  c.onclick = onClick;
+  return c;
+}
+
+function mkTextInput(label, value, onChange) {
+  const g = mkFieldGroup(label);
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'field-input';
+  inp.value = value;
+  inp.addEventListener('input', () => onChange(inp.value));
+  g.appendChild(inp);
+  return g;
+}
+
+function mkTextarea(label, value, onChange) {
+  const g = mkFieldGroup(label);
+  const ta = document.createElement('textarea');
+  ta.className = 'field-input';
+  ta.value = value;
+  ta.rows = 3;
+  ta.addEventListener('input', () => onChange(ta.value));
+  g.appendChild(ta);
+  return g;
+}
+
+function mkSizeChips(label, slide, key, update) {
+  const g = mkFieldGroup(label);
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  ['auto','xl','l','m','s'].forEach(sz => {
+    const val = sz === 'auto' ? undefined : sz;
+    const active = (slide[key] || undefined) === val;
+    const chip = mkChip(sz === 'auto' ? 'Auto' : sz.toUpperCase(), active, () => {
+      update(key, val);
+      chips.querySelectorAll('.chip').forEach((c,i) => c.classList.toggle('active', i === ['auto','xl','l','m','s'].indexOf(sz)));
+    });
+    chips.appendChild(chip);
+  });
+  g.appendChild(chips);
+  return g;
+}
+
+function mkItemsEditor(slide, update) {
+  const g = mkFieldGroup('Lista elemek');
+  let dragItemSrc = null;
+
+  const renderItems = () => {
+    list.innerHTML = '';
+    (slide.items || []).forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.draggable = true;
+      row.innerHTML = `<span class="drag-handle">⠿</span>`;
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'field-input';
+      inp.value = item;
+      inp.addEventListener('input', () => { slide.items[i] = inp.value; update('items', slide.items); });
+      const del = document.createElement('button');
+      del.className = 'item-del';
+      del.textContent = '✕';
+      del.onclick = () => { slide.items.splice(i, 1); update('items', slide.items); renderItems(); };
+      row.appendChild(inp);
+      row.appendChild(del);
+
+      row.addEventListener('dragstart', () => { dragItemSrc = i; row.style.opacity = '0.4'; });
+      row.addEventListener('dragend', () => { row.style.opacity = '1'; });
+      row.addEventListener('dragover', (e) => { e.preventDefault(); row.style.background = 'var(--primarySoft)'; });
+      row.addEventListener('dragleave', () => { row.style.background = ''; });
+      row.addEventListener('drop', (e) => {
+        e.preventDefault(); row.style.background = '';
+        if (dragItemSrc === null || dragItemSrc === i) return;
+        const moved = slide.items.splice(dragItemSrc, 1)[0];
+        slide.items.splice(i, 0, moved);
+        dragItemSrc = null;
+        update('items', slide.items);
+        renderItems();
+      });
+
+      list.appendChild(row);
+    });
+  };
+
+  const list = document.createElement('div');
+  list.className = 'items-list';
+  renderItems();
+  g.appendChild(list);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn small';
+  addBtn.textContent = '+ Elem hozzáadása';
+  addBtn.onclick = () => {
+    if (!slide.items) slide.items = [];
+    slide.items.push('Új elem');
+    update('items', slide.items);
+    renderItems();
+  };
+  g.appendChild(addBtn);
+  return g;
+}
+
+// ─────────────────────────────────────────
+// Mini preview
+// ─────────────────────────────────────────
+function renderMiniPreview() {
+  const wrap = document.getElementById('mini-preview-wrap');
+  if (!wrap) return;
+  const slide = getProcessed()[state.cur];
+  if (!slide) { wrap.innerHTML = ''; return; }
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+  const content = renderSlide(slide, W, H, palette);
+  const containerW = wrap.clientWidth || 340;
+  const scale = containerW / W;
+  const scaledH = H * scale;
+  wrap.style.height = scaledH + 'px';
+  wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${containerW}" height="${scaledH}">${content}</svg>`;
+}
+
+// ─────────────────────────────────────────
+// Preview tab
+// ─────────────────────────────────────────
+function renderPreviewTab() {
+  const slides = getProcessed();
+  const slide = slides[state.cur];
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+
+  // Main preview
+  const wrap = document.getElementById('preview-wrap');
+  if (slide) {
+    const content = renderSlide(slide, W, H, palette);
+    const containerW = wrap.clientWidth || 500;
+    const scale = Math.min(1, containerW / W);
+    const scaledW = W * scale;
+    const scaledH = H * scale;
+    wrap.style.height = scaledH + 'px';
+    wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${scaledW}" height="${scaledH}">${content}</svg>`;
+  }
+
+  // Counter
+  document.getElementById('slide-counter').textContent = `${state.cur + 1} / ${slides.length}`;
+  document.getElementById('prev-btn').disabled = state.cur === 0;
+  document.getElementById('next-btn').disabled = state.cur >= slides.length - 1;
+
+  // Variant buttons
+  const v = (slide && slide.variant) || 1;
+  [1,2,3].forEach(n => {
+    document.getElementById(`v${n}-btn`).classList.toggle('active', v === n);
+  });
+
+  // Show nums toggle
+  document.getElementById('show-nums-toggle').checked = state.showNums;
+
+  // Palette grid
+  renderPaletteGrid();
+
+  // Thumbnail strip
+  renderThumbs();
+}
+
+function renderPaletteGrid() {
+  const grid = document.getElementById('palette-grid');
+  grid.innerHTML = '';
+  Object.entries(PALETTES).forEach(([name, pal]) => {
+    const sw = document.createElement('div');
+    sw.className = 'palette-swatch' + (name === state.stilus ? ' active' : '');
+    sw.title = name;
+    sw.style.background = `linear-gradient(135deg, ${pal.primary} 50%, ${pal.bg} 50%)`;
+    sw.addEventListener('click', () => {
+      state.stilus = name;
+      applyCSSVars(pal);
+      renderPreviewTab();
+    });
+    grid.appendChild(sw);
+  });
+}
+
+let thumbDebounce = null;
+function scheduleThumbUpdate() {
+  clearTimeout(thumbDebounce);
+  thumbDebounce = setTimeout(() => { if (document.getElementById('tab-preview').classList.contains('active')) renderThumbs(); }, 200);
+}
+
+function renderThumbs() {
+  const strip = document.getElementById('thumb-strip');
+  strip.innerHTML = '';
+  const slides = getProcessed();
+  const [W, H] = DIMS[state.ratio];
+  const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
+  const thumbW = 80;
+  const thumbH = Math.round(H / W * thumbW);
+
+  slides.forEach((slide, i) => {
+    const item = document.createElement('div');
+    item.className = 'thumb-item' + (i === state.cur ? ' active' : '');
+    const content = renderSlide(slide, W, H, palette);
+    item.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${thumbW}" height="${thumbH}">${content}</svg>`;
+    item.addEventListener('click', () => {
+      state.cur = i;
+      renderPreviewTab();
+    });
+    strip.appendChild(item);
+  });
+}
+
+function navigatePreview(dir) {
+  const slides = state.slides;
+  state.cur = Math.max(0, Math.min(slides.length - 1, state.cur + dir));
+  renderPreviewTab();
+}
+
+function setVariant(v) {
+  if (!state.slides[state.cur]) return;
+  state.slides[state.cur].variant = v;
+  renderPreviewTab();
+  renderSlideEditor();
+  renderMiniPreview();
+}
+
+function randomVariant() {
+  setVariant(Math.floor(Math.random() * 3) + 1);
+}
+
+function shuffleAll() {
+  state.slides.forEach(s => { s.variant = Math.floor(Math.random() * 3) + 1; });
+  renderPreviewTab();
+  renderSlideEditor();
+  renderMiniPreview();
+  toast('Változatok véletlenszerűsítve!');
+}
+
+function toggleShowNums() {
+  state.showNums = document.getElementById('show-nums-toggle').checked;
+  renderPreviewTab();
+  renderMiniPreview();
+}
+
+// ─────────────────────────────────────────
+// Ratio & palette
+// ─────────────────────────────────────────
+function setRatio(r) {
+  state.ratio = r;
+  document.getElementById('rb-45').classList.toggle('active', r === '4:5');
+  document.getElementById('rb-11').classList.toggle('active', r === '1:1');
+  renderAll();
+}
+
+function applyCSSVars(pal) {
+  const root = document.documentElement;
+  Object.entries(pal).forEach(([k, v]) => root.style.setProperty('--' + k, v));
+}
+
+// ─────────────────────────────────────────
+// Full render
+// ─────────────────────────────────────────
+function renderAll() {
+  renderSlideList();
+  renderSlideEditor();
+  renderMiniPreview();
+  if (document.getElementById('tab-preview').classList.contains('active')) renderPreviewTab();
+  const pal = PALETTES[state.stilus] || PALETTES.termeszetes;
+  applyCSSVars(pal);
+}
+
+// ─────────────────────────────────────────
+// Keyboard shortcuts
+// ─────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('tab-preview').classList.contains('active')) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowLeft') navigatePreview(-1);
+  if (e.key === 'ArrowRight') navigatePreview(1);
+});
+
+// ─────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────
+(function init() {
+  state.slides = SAMPLE.slides.map(s => ({...s}));
+  state.stilus = SAMPLE.stilus;
+  const pal = PALETTES[state.stilus];
+  applyCSSVars(pal);
+  renderAll();
+
+  // Update mini preview on resize
+  window.addEventListener('resize', () => {
+    renderMiniPreview();
+    if (document.getElementById('tab-preview').classList.contains('active')) renderPreviewTab();
+  });
+})();
+</script>
+</body>
+</html>
