@@ -1706,11 +1706,19 @@ function renderPreviewTab() {
   const [W, H] = DIMS[state.ratio];
   const palette = PALETTES[state.stilus] || PALETTES.termeszetes;
 
-  // Desktop preview
+  // Desktop preview — compute explicit pixel dimensions so the SVG fills the canvas
   const wrap = document.getElementById('preview-wrap');
   if (wrap && slide) {
     const content = renderSlide(slide, W, H, palette);
-    wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="display:block;">${content}</svg>`;
+    const ci = document.querySelector('.canvas-inner');
+    const availW = ci ? Math.max(ci.clientWidth  - 48, 200) : 480;
+    const availH = ci ? Math.max(ci.clientHeight - 48, 200) : 600;
+    const aspect = H / W;
+    let svgW = availW;
+    let svgH = svgW * aspect;
+    if (svgH > availH) { svgH = availH; svgW = svgH / aspect; }
+    svgW = Math.round(svgW); svgH = Math.round(svgH);
+    wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${svgW}" height="${svgH}" style="display:block;border-radius:4px;box-shadow:0 12px 40px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.06);">${content}</svg>`;
   }
 
   // Mobile preview
@@ -1890,10 +1898,18 @@ document.addEventListener('keydown', (e) => {
   state.stilus = SAMPLE.stilus;
   const pal = PALETTES[state.stilus];
   applyCSSVars(pal);
-  renderAll();
+  // Render slide list + editor immediately, but delay preview until layout is painted
+  renderSlideThumbs();
+  renderMobileSlideList();
+  renderSlideEditor('slide-editor-body');
+  renderSlideEditor('m-slide-editor');
+  renderMiniPreview();
+  renderPaletteAll();
   const jsonStr = JSON.stringify({slides: state.slides, stilus: state.stilus}, null, 2);
   const ja = document.getElementById('json-area'); if (ja) ja.value = jsonStr;
   const mja = document.getElementById('m-json-area'); if (mja) mja.value = jsonStr;
+  // Wait for layout before measuring canvas dimensions
+  requestAnimationFrame(() => renderPreviewTab());
   window.addEventListener('resize', () => renderPreviewTab());
 })();
 </script>
