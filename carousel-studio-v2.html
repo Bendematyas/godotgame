@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Carousel Studio v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+/* ── Reset ─────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--ui-bg);color:var(--ui-text)}
+
+/* ── UI Design System ───────────────────────────────────────────────── */
+:root{
+  --ui-bg:#0F1117;
+  --ui-surface:#1A1D27;
+  --ui-surface2:#222533;
+  --ui-border:#2E3245;
+  --ui-border2:#3A3F58;
+  --ui-text:#E8EAF0;
+  --ui-mid:#9098B0;
+  --ui-soft:#555C75;
+  --ui-accent:#6C63FF;
+  --ui-accent2:#8B84FF;
+  --ui-accentBg:#1E1C3A;
+  --ui-green:#4CAF82;
+  --ui-red:#E05858;
+  --ui-yellow:#E0A020;
+  --topbar-h:52px;
+  --left-w:380px;
+  --radius:10px;
+  --radius-sm:6px;
+}
+
+/* ── App Shell ──────────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+#topbar{
+  height:var(--topbar-h);
+  background:var(--ui-surface);
+  border-bottom:1px solid var(--ui-border);
+  display:flex;align-items:center;gap:12px;
+  padding:0 16px;
+  flex-shrink:0;
+  z-index:100;
+}
+#topbar .logo{
+  font-size:15px;font-weight:700;color:var(--ui-text);letter-spacing:-0.3px;
+  display:flex;align-items:center;gap:8px;
+}
+#topbar .logo-icon{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,var(--ui-accent),#A78BFA);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:#fff;
+}
+#topbar .spacer{flex:1}
+#topbar .tb-btn{
+  height:32px;padding:0 14px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:600;cursor:pointer;border:none;
+  display:flex;align-items:center;gap:6px;transition:.15s;
+}
+#topbar .tb-btn-ghost{
+  background:transparent;color:var(--ui-mid);
+}
+#topbar .tb-btn-ghost:hover{background:var(--ui-surface2);color:var(--ui-text)}
+#topbar .tb-btn-primary{
+  background:var(--ui-accent);color:#fff;
+}
+#topbar .tb-btn-primary:hover{background:var(--ui-accent2)}
+#topbar .tb-sep{width:1px;height:20px;background:var(--ui-border);margin:0 4px}
+#topbar .slide-counter{font-size:12px;color:var(--ui-soft);white-space:nowrap}
+
+/* ── Main Workspace ─────────────────────────────────────────────────── */
+#workspace{
+  display:flex;flex:1;overflow:hidden;
+}
+
+/* ── Left Panel: Content Editor ─────────────────────────────────────── */
+#left-panel{
+  width:var(--left-w);
+  flex-shrink:0;
+  background:var(--ui-surface);
+  border-right:1px solid var(--ui-border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+#left-panel-head{
+  padding:14px 16px 12px;
+  border-bottom:1px solid var(--ui-border);
+  flex-shrink:0;
+}
+#left-panel-head h2{font-size:12px;font-weight:600;color:var(--ui-soft);letter-spacing:.6px;text-transform:uppercase}
+#left-panel-body{flex:1;overflow-y:auto;padding:16px}
+#left-panel-body::-webkit-scrollbar{width:4px}
+#left-panel-body::-webkit-scrollbar-track{background:transparent}
+#left-panel-body::-webkit-scrollbar-thumb{background:var(--ui-border2);border-radius:2px}
+
+/* Slide navigation in left panel */
+#slide-nav{
+  display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;
+}
+.snav-btn{
+  height:30px;padding:0 12px;border-radius:var(--radius-sm);
+  font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;
+  cursor:pointer;border:1.5px solid var(--ui-border2);
+  background:transparent;color:var(--ui-mid);transition:.15s;white-space:nowrap;
+}
+.snav-btn:hover{border-color:var(--ui-accent);color:var(--ui-accent)}
+.snav-btn.active{background:var(--ui-accentBg);border-color:var(--ui-accent);color:var(--ui-accent2)}
+
+/* Field groups */
+.field-group{
+  margin-bottom:18px;
+}
+.field-label{
+  font-size:11px;font-weight:600;color:var(--ui-soft);letter-spacing:.5px;text-transform:uppercase;
+  margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;
+}
+.field-counter{font-size:10px;font-weight:400;letter-spacing:0;text-transform:none}
+.field-counter.warn{color:var(--ui-yellow)}
+.field-counter.over{color:var(--ui-red)}
+
+.f-input,.f-textarea{
+  width:100%;background:var(--ui-surface2);
+  border:1.5px solid var(--ui-border);border-radius:var(--radius-sm);
+  color:var(--ui-text);font-family:inherit;font-size:13px;
+  transition:.15s;resize:vertical;
+}
+.f-input{height:38px;padding:0 12px}
+.f-textarea{padding:10px 12px;min-height:80px;line-height:1.5}
+.f-input:focus,.f-textarea:focus{outline:none;border-color:var(--ui-accent)}
+.f-input::placeholder,.f-textarea::placeholder{color:var(--ui-soft)}
+
+/* List items editor */
+.list-items-wrap{display:flex;flex-direction:column;gap:8px}
+.list-item-row{display:flex;gap:8px;align-items:flex-start}
+.list-item-row .li-num{
+  width:22px;height:38px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--ui-soft);flex-shrink:0;
+}
+.list-item-row .li-input{flex:1}
+.list-item-row .li-del{
+  width:32px;height:38px;border:none;background:transparent;
+  color:var(--ui-soft);cursor:pointer;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:16px;transition:.15s;
+}
+.list-item-row .li-del:hover{background:rgba(224,88,88,.15);color:var(--ui-red)}
+.add-item-btn{
+  width:100%;height:34px;border:1.5px dashed var(--ui-border2);
+  background:transparent;color:var(--ui-mid);
+  border-radius:var(--radius-sm);cursor:pointer;font-size:12px;
+  font-weight:600;transition:.15s;
+}
+.add-item-btn:hover{border-color:var(--ui-accent);color:var(--ui-accent)}
+
+/* Palette row */
+.palette-row{display:flex;gap:8px;flex-wrap:wrap}
+.pal-swatch{
+  width:28px;height:28px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:.15s;position:relative;
+}
+.pal-swatch.active{border-color:var(--ui-text);}
+.pal-swatch.active::after{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid var(--ui-text);opacity:.5;
+}
+
+/* Divider */
+.field-divider{height:1px;background:var(--ui-border);margin:20px 0}
+
+/* Section heading */
+.sec-heading{
+  font-size:11px;font-weight:700;color:var(--ui-mid);letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.sec-heading::after{content:'';flex:1;height:1px;background:var(--ui-border)}
+
+/* Slide type label */
+.slide-type-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px;
+  background:var(--ui-accentBg);color:var(--ui-accent2);margin-bottom:16px;
+}
+
+/* ── Center: Preview ─────────────────────────────────────────────────── */
+#center-panel{
+  flex:1;
+  background:#0A0C12;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+#preview-toolbar{
+  height:44px;
+  background:var(--ui-surface);
+  border-bottom:1px solid var(--ui-border);
+  display:flex;align-items:center;padding:0 16px;gap:10px;
+  flex-shrink:0;
+}
+#preview-toolbar .pt-label{font-size:12px;color:var(--ui-mid);font-weight:500}
+.nav-arrow{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:var(--ui-surface2);border:1px solid var(--ui-border);
+  color:var(--ui-mid);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:.15s;
+}
+.nav-arrow:hover{background:var(--ui-border2);color:var(--ui-text)}
+.nav-arrow:disabled{opacity:.3;cursor:default}
+#pt-slide-label{font-size:12px;font-weight:600;color:var(--ui-text);min-width:80px;text-align:center}
+
+#preview-area{
+  flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  padding:24px;position:relative;
+}
+#preview-scale-wrap{
+  position:relative;
+  /* Will be sized by JS to fit available space */
+}
+#slide-render-target{
+  width:1080px;height:1350px;
+  transform-origin:top left;
+  /* transform scale set by JS */
+  position:absolute;top:0;left:0;
+  overflow:hidden;
+  font-family:'Inter',sans-serif;
+}
+#preview-shadow{
+  position:absolute;top:0;left:0;
+  width:1080px;height:1350px;
+  transform-origin:top left;
+  border-radius:0;
+  box-shadow:0 30px 80px rgba(0,0,0,.6),0 8px 24px rgba(0,0,0,.4);
+  pointer-events:none;
+}
+
+/* ── Thumb strip at bottom ───────────────────────────────────────────── */
+#thumb-strip{
+  height:100px;
+  background:var(--ui-surface);
+  border-top:1px solid var(--ui-border);
+  display:flex;align-items:center;
+  padding:0 16px;gap:10px;
+  overflow-x:auto;flex-shrink:0;
+}
+#thumb-strip::-webkit-scrollbar{height:3px}
+#thumb-strip::-webkit-scrollbar-track{background:transparent}
+#thumb-strip::-webkit-scrollbar-thumb{background:var(--ui-border2);border-radius:2px}
+
+.thumb-item{
+  flex-shrink:0;
+  width:64px;height:80px;
+  border-radius:6px;
+  border:2px solid var(--ui-border);
+  cursor:pointer;
+  overflow:hidden;position:relative;
+  transition:.15s;
+  background:var(--ui-surface2);
+}
+.thumb-item:hover{border-color:var(--ui-border2)}
+.thumb-item.active{border-color:var(--ui-accent)}
+.thumb-item .thumb-inner{
+  width:1080px;height:1350px;
+  transform-origin:top left;
+  pointer-events:none;
+  /* scale = 60/1080 */
+  transform:scale(0.05556);
+}
+.thumb-item .thumb-label{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(0,0,0,.6);
+  font-size:8px;font-weight:600;color:rgba(255,255,255,.8);
+  text-align:center;padding:3px 0;letter-spacing:.3px;text-transform:uppercase;
+}
+
+/* ── Slide Designs (1080×1350) ─────────────────────────────────────── */
+/* All slides share base layout vars via CSS custom properties injected on #slide-render-target */
+
+.s-slide{
+  width:1080px;height:1350px;
+  position:relative;overflow:hidden;
+  font-family:'Inter',sans-serif;
+  /* palette vars applied via inline style on the element */
+}
+
+/* ── COVER SLIDE ────────────────────────────────────────────────────── */
+.s-cover{
+  background:var(--s-bg);
+  display:flex;flex-direction:column;
+  align-items:flex-start;justify-content:center;
+  padding:120px 100px;
+  gap:0;
+}
+.s-cover .cv-eyebrow{
+  font-size:22px;font-weight:600;
+  color:var(--s-accent);
+  letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:32px;
+  opacity:.8;
+}
+.s-cover .cv-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:96px;line-height:1.05;font-weight:800;
+  color:var(--s-primary);
+  margin-bottom:40px;
+  max-width:800px;
+  letter-spacing:-2px;
+}
+.s-cover .cv-subtitle{
+  font-size:28px;font-weight:400;line-height:1.5;
+  color:var(--s-secondary);
+  max-width:720px;
+  opacity:.85;
+}
+.s-cover .cv-line{
+  width:80px;height:6px;
+  background:var(--s-accent);
+  border-radius:3px;
+  margin-bottom:48px;
+}
+.s-cover .cv-swipe{
+  position:absolute;bottom:60px;right:80px;
+  font-size:20px;font-weight:600;
+  color:var(--s-accent);
+  display:flex;align-items:center;gap:12px;
+  letter-spacing:.5px;
+}
+.s-cover .cv-swipe-arrow{
+  width:48px;height:48px;border-radius:50%;
+  border:2px solid var(--s-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+/* Corner accent blob */
+.s-cover::before{
+  content:'';
+  position:absolute;top:-200px;right:-200px;
+  width:600px;height:600px;border-radius:50%;
+  background:var(--s-accent);opacity:.06;
+  pointer-events:none;
+}
+.s-cover::after{
+  content:'';
+  position:absolute;bottom:-150px;left:-100px;
+  width:400px;height:400px;border-radius:50%;
+  background:var(--s-accent);opacity:.04;
+  pointer-events:none;
+}
+
+/* ── LIST SLIDE ─────────────────────────────────────────────────────── */
+.s-list{
+  background:var(--s-bg);
+  padding:100px 100px;
+  display:flex;flex-direction:column;
+}
+.s-list .ls-tag{
+  font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:var(--s-accent);margin-bottom:28px;
+}
+.s-list .ls-heading{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:72px;line-height:1.1;font-weight:700;
+  color:var(--s-primary);
+  margin-bottom:20px;letter-spacing:-1.5px;
+  max-width:750px;
+}
+.s-list .ls-sub{
+  font-size:26px;font-weight:400;color:var(--s-secondary);
+  margin-bottom:60px;line-height:1.4;max-width:700px;opacity:.8;
+}
+.s-list .ls-items{display:flex;flex-direction:column;gap:28px;flex:1}
+.s-list .ls-item{
+  display:flex;align-items:flex-start;gap:28px;
+}
+.s-list .ls-bullet{
+  width:48px;height:48px;border-radius:50%;
+  background:var(--s-accent);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:var(--s-bg);
+  margin-top:4px;
+}
+.s-list .ls-text{
+  font-size:30px;font-weight:500;line-height:1.4;
+  color:var(--s-primary);flex:1;
+}
+
+/* ── QUOTE SLIDE ────────────────────────────────────────────────────── */
+.s-quote{
+  background:var(--s-bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:100px 100px;
+  text-align:center;
+  gap:0;position:relative;
+}
+.s-quote .qt-marks{
+  font-size:220px;line-height:1;font-family:'Playfair Display',Georgia,serif;
+  color:var(--s-accent);opacity:.15;
+  position:absolute;top:40px;left:80px;
+  pointer-events:none;font-weight:700;
+}
+.s-quote .qt-line{
+  width:60px;height:4px;background:var(--s-accent);border-radius:2px;margin-bottom:48px;
+}
+.s-quote .qt-text{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:64px;line-height:1.25;font-weight:600;font-style:italic;
+  color:var(--s-primary);
+  margin-bottom:48px;
+  position:relative;z-index:1;
+  max-width:840px;
+  letter-spacing:-.5px;
+}
+.s-quote .qt-attr{
+  font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--s-accent);
+}
+.s-quote .qt-role{
+  font-size:20px;font-weight:400;color:var(--s-secondary);margin-top:8px;opacity:.7;
+}
+
+/* ── CONTENT SLIDE ──────────────────────────────────────────────────── */
+.s-content{
+  background:var(--s-bg);
+  padding:90px 100px;
+  display:flex;flex-direction:column;
+}
+.s-content .co-tag{
+  font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:var(--s-accent);margin-bottom:24px;
+}
+.s-content .co-heading{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:68px;line-height:1.1;font-weight:700;
+  color:var(--s-primary);
+  margin-bottom:36px;letter-spacing:-1.5px;
+  max-width:800px;
+}
+.s-content .co-body{
+  font-size:30px;font-weight:400;line-height:1.65;
+  color:var(--s-secondary);
+  flex:1;max-width:840px;opacity:.9;
+}
+.s-content .co-body strong{color:var(--s-primary);font-weight:700}
+.s-content .co-insight{
+  margin-top:50px;
+  padding:36px 40px;
+  background:var(--s-card);
+  border-radius:20px;
+  border-left:6px solid var(--s-accent);
+}
+.s-content .co-insight-label{
+  font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--s-accent);margin-bottom:12px;
+}
+.s-content .co-insight-text{
+  font-size:26px;font-weight:500;line-height:1.4;color:var(--s-primary);
+}
+
+/* ── CLOSING SLIDE ──────────────────────────────────────────────────── */
+.s-closing{
+  background:var(--s-bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:100px;
+  position:relative;
+  gap:0;
+}
+.s-closing .cl-top-accent{
+  width:80px;height:6px;background:var(--s-accent);border-radius:3px;margin-bottom:56px;
+}
+.s-closing .cl-heading{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:80px;line-height:1.1;font-weight:800;
+  color:var(--s-primary);
+  margin-bottom:32px;letter-spacing:-2px;max-width:840px;
+}
+.s-closing .cl-sub{
+  font-size:30px;font-weight:400;line-height:1.5;
+  color:var(--s-secondary);
+  margin-bottom:64px;max-width:700px;opacity:.8;
+}
+.s-closing .cl-cta{
+  padding:28px 60px;
+  background:var(--s-accent);
+  border-radius:60px;
+  font-size:28px;font-weight:700;
+  color:var(--s-bg);
+  letter-spacing:.5px;
+  display:inline-block;
+}
+.s-closing .cl-handle{
+  margin-top:40px;
+  font-size:22px;font-weight:600;letter-spacing:2px;
+  color:var(--s-accent);opacity:.6;
+}
+/* Decorative circles */
+.s-closing::before{
+  content:'';
+  position:absolute;bottom:-100px;right:-100px;
+  width:500px;height:500px;border-radius:50%;
+  border:80px solid var(--s-accent);opacity:.05;
+  pointer-events:none;
+}
+.s-closing::after{
+  content:'';
+  position:absolute;top:-80px;left:-80px;
+  width:360px;height:360px;border-radius:50%;
+  border:60px solid var(--s-accent);opacity:.04;
+  pointer-events:none;
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ui-surface2);border:1px solid var(--ui-border2);
+  color:var(--ui-text);padding:10px 20px;border-radius:var(--radius);
+  font-size:13px;font-weight:500;pointer-events:none;
+  opacity:0;transition:opacity .2s,transform .2s;z-index:9999;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Export overlay ─────────────────────────────────────────────────── */
+#export-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:1000;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+#export-overlay.show{display:flex}
+#export-box{
+  background:var(--ui-surface);border:1px solid var(--ui-border);
+  border-radius:16px;padding:32px;width:380px;
+  display:flex;flex-direction:column;gap:16px;
+}
+#export-box h3{font-size:16px;font-weight:700;color:var(--ui-text)}
+#export-box p{font-size:13px;color:var(--ui-mid);line-height:1.5}
+.export-progress{
+  height:4px;background:var(--ui-border);border-radius:2px;overflow:hidden;
+}
+.export-progress-bar{
+  height:100%;background:var(--ui-accent);border-radius:2px;
+  width:0;transition:width .3s;
+}
+.export-close-btn{
+  height:40px;background:var(--ui-surface2);border:1px solid var(--ui-border);
+  color:var(--ui-text);border-radius:var(--radius-sm);cursor:pointer;font-size:14px;
+  font-weight:600;
+}
+
+/* ── Responsive: hide on small screen ──────────────────────────────── */
+@media(max-width:900px){
+  #left-panel{display:none}
+  #center-panel{flex:1}
+}
+
+/* ── Scrollbar global ────────────────────────────────────────────────── */
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--ui-border2);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="logo">
+      <div class="logo-icon">C</div>
+      Carousel Studio
+    </div>
+    <div class="spacer"></div>
+    <span class="slide-counter" id="tb-counter">Slide 1 of 5</span>
+    <div class="tb-sep"></div>
+    <button class="tb-btn tb-btn-ghost" id="btn-export-single" title="Export current slide">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3"/><polyline points="5 7 8 10 11 7"/><line x1="8" y1="2" x2="8" y2="10"/></svg>
+      PNG
+    </button>
+    <button class="tb-btn tb-btn-primary" id="btn-export-all">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3"/><polyline points="5 7 8 10 11 7"/><line x1="8" y1="2" x2="8" y2="10"/></svg>
+      Export All
+    </button>
+  </div>
+
+  <!-- Workspace -->
+  <div id="workspace">
+
+    <!-- Left: Editor -->
+    <div id="left-panel">
+      <div id="left-panel-head">
+        <h2>Content Editor</h2>
+      </div>
+      <div id="left-panel-body">
+        <!-- Slide navigation -->
+        <div id="slide-nav"></div>
+        <!-- Editor fields injected here -->
+        <div id="editor-fields"></div>
+        <!-- Palette -->
+        <div class="field-divider"></div>
+        <div class="sec-heading">Colour Palette</div>
+        <div class="palette-row" id="pal-row"></div>
+      </div>
+    </div>
+
+    <!-- Center: Preview -->
+    <div id="center-panel">
+      <div id="preview-toolbar">
+        <button class="nav-arrow" id="btn-prev" title="Previous slide">&#8592;</button>
+        <span id="pt-slide-label">Cover</span>
+        <button class="nav-arrow" id="btn-next" title="Next slide">&#8594;</button>
+        <div style="flex:1"></div>
+        <span class="pt-label" id="pt-dim">1080 × 1350 px</span>
+      </div>
+      <div id="preview-area">
+        <div id="preview-scale-wrap">
+          <div id="preview-shadow"></div>
+          <div id="slide-render-target"></div>
+        </div>
+      </div>
+      <!-- Thumbnail strip -->
+      <div id="thumb-strip" id="thumb-strip-el"></div>
+    </div>
+
+  </div><!-- /workspace -->
+</div><!-- /app -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Export overlay -->
+<div id="export-overlay">
+  <div id="export-box">
+    <h3>Exporting slides…</h3>
+    <p id="export-msg">Rendering slide 1 of 5…</p>
+    <div class="export-progress"><div class="export-progress-bar" id="export-bar"></div></div>
+    <button class="export-close-btn" id="export-close-btn" style="display:none">Done — Close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+const SLIDE_TYPES = ['cover','list','quote','content','closing'];
+const SLIDE_LABELS = {cover:'Cover',list:'Key Points',quote:'Quote',content:'Deep Dive',closing:'Call to Action'};
+
+let state = {
+  currentSlide: 0,
+  palette: 'natural',
+  slides: {
+    cover: {
+      eyebrow: 'Pszichoedukáció',
+      title: 'A szorongás\nnem az ellenséged',
+      subtitle: 'Amit a félelemről tudnod kell ahhoz, hogy szövetségeseddé válhasson.',
+    },
+    list: {
+      heading: '5 dolog, amit\ntudnod kell',
+      sub: 'A szorongás biológiai mechanizmusa érthetően.',
+      items: [
+        'Az amygdala riasztást küld veszély esetén',
+        'A kortizol mobilizálja a tested',
+        'Ez az evolúciós túlélési rendszer',
+        'Krónikus stressznél túlhajszolt lesz',
+        'Megtanulható kezelni és szabályozni',
+      ],
+    },
+    quote: {
+      text: 'A bátorság nem a félelem hiánya, hanem az a döntés, hogy valami más fontosabb.',
+      attribution: 'Franklin D. Roosevelt',
+      role: 'US President, 1933–1945',
+    },
+    content: {
+      tag: 'Mélyebb összefüggés',
+      heading: 'Az idegrendszer\nnyelve',
+      body: 'Amikor szorongást érzel, az idegrendszered nem hibázik — pontosan azt csinálja, amire tervezték. A probléma az, hogy a modern világ veszélyei nem oroszlánok, hanem emailek.',
+      insight: 'A szabályozás kulcsa: tudatos légzés + a pre-frontális kéreg aktiválása.',
+    },
+    closing: {
+      heading: 'Kezdd el ma!',
+      sub: 'Mentsd el ezt a posztot, és próbáld ki a 4-7-8 légzéstechnikát ma este.',
+      cta: 'Kövess több tartalomért',
+      handle: '@pszichologia.mindennapokra',
+    },
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// PALETTES  (name → {bg, primary, secondary, accent, card})
+// ═══════════════════════════════════════════════════════════════════════
+const PALETTES = {
+  natural:    {bg:'#F5F0E8',primary:'#2C2416',secondary:'#5C4E38',accent:'#8B6914',card:'#EDE8DE'},
+  dark:       {bg:'#12151A',primary:'#E8ECF0',secondary:'#9098A8',accent:'#6C8EAD',card:'#1E222C'},
+  minimal:    {bg:'#FAFAFA',primary:'#111111',secondary:'#555555',accent:'#111111',card:'#F0F0F0'},
+  sand:       {bg:'#F7F2EA',primary:'#3D2E1E',secondary:'#7A6550',accent:'#C4935A',card:'#EDE5D8'},
+  blue:       {bg:'#EEF3F8',primary:'#1A2840',secondary:'#3D5A7A',accent:'#2563EB',card:'#DDE8F2'},
+  vintage:    {bg:'#F0EAE0',primary:'#2D1F0E',secondary:'#6B4C2A',accent:'#B05A2F',card:'#E8DDD0'},
+  rose:       {bg:'#FFF0F3',primary:'#3D1020',secondary:'#8C3A50',accent:'#D4496A',card:'#FFE0E7'},
+  indigo:     {bg:'#F0F0FF',primary:'#1A1050',secondary:'#4438A0',accent:'#6C63FF',card:'#E4E2FF'},
+  mint:       {bg:'#EDF7F2',primary:'#0F2E20',secondary:'#2D6647',accent:'#28A060',card:'#D8EFE3'},
+  nightblue:  {bg:'#0D1520',primary:'#D8E8F0',secondary:'#7A9CB5',accent:'#4A90C4',card:'#162030'},
+  terracotta: {bg:'#F5EDE8',primary:'#2E160E',secondary:'#7A4030',accent:'#C0582A',card:'#EAD8D0'},
+  charcoal:   {bg:'#1E2028',primary:'#E4E6EC',secondary:'#8890A8',accent:'#9B8FE0',card:'#282C38'},
+};
+
+const PAL_DISPLAY = [
+  {key:'natural',color:'#8B6914'},
+  {key:'dark',color:'#6C8EAD'},
+  {key:'minimal',color:'#111111'},
+  {key:'sand',color:'#C4935A'},
+  {key:'blue',color:'#2563EB'},
+  {key:'vintage',color:'#B05A2F'},
+  {key:'rose',color:'#D4496A'},
+  {key:'indigo',color:'#6C63FF'},
+  {key:'mint',color:'#28A060'},
+  {key:'nightblue',color:'#4A90C4'},
+  {key:'terracotta',color:'#C0582A'},
+  {key:'charcoal',color:'#9B8FE0'},
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// SLIDE RENDERERS  → returns HTML string for injection into #slide-render-target
+// ═══════════════════════════════════════════════════════════════════════
+
+function palVars(palKey) {
+  const p = PALETTES[palKey] || PALETTES.natural;
+  return `--s-bg:${p.bg};--s-primary:${p.primary};--s-secondary:${p.secondary};--s-accent:${p.accent};--s-card:${p.card};`;
+}
+
+function renderCover(d, palKey) {
+  const title = (d.title||'').replace(/\n/g,'<br>');
+  const p = PALETTES[palKey] || PALETTES.natural;
+  return `<div class="s-slide s-cover" style="${palVars(palKey)}">
+    <div class="cv-eyebrow">${esc(d.eyebrow||'')}</div>
+    <div class="cv-line"></div>
+    <div class="cv-title">${title}</div>
+    <div class="cv-subtitle">${esc(d.subtitle||'')}</div>
+    <div class="cv-swipe">
+      Tovább olvasás
+      <div class="cv-swipe-arrow">›</div>
+    </div>
+  </div>`;
+}
+
+function renderList(d, palKey) {
+  const items = (d.items||[]).slice(0,6);
+  const heading = (d.heading||'').replace(/\n/g,'<br>');
+  const bullets = items.map((t,i)=>`
+    <div class="ls-item">
+      <div class="ls-bullet">${i+1}</div>
+      <div class="ls-text">${esc(t)}</div>
+    </div>`).join('');
+  return `<div class="s-slide s-list" style="${palVars(palKey)}">
+    <div class="ls-tag">Kulcspontok</div>
+    <div class="ls-heading">${heading}</div>
+    <div class="ls-sub">${esc(d.sub||'')}</div>
+    <div class="ls-items">${bullets}</div>
+  </div>`;
+}
+
+function renderQuote(d, palKey) {
+  return `<div class="s-slide s-quote" style="${palVars(palKey)}">
+    <div class="qt-marks">"</div>
+    <div class="qt-line"></div>
+    <div class="qt-text">"${esc(d.text||'')}"</div>
+    <div class="qt-attr">${esc(d.attribution||'')}</div>
+    ${d.role ? `<div class="qt-role">${esc(d.role)}</div>` : ''}
+  </div>`;
+}
+
+function renderContent(d, palKey) {
+  const heading = (d.heading||'').replace(/\n/g,'<br>');
+  const body = (d.body||'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  return `<div class="s-slide s-content" style="${palVars(palKey)}">
+    <div class="co-tag">${esc(d.tag||'')}</div>
+    <div class="co-heading">${heading}</div>
+    <div class="co-body">${body}</div>
+    ${d.insight ? `<div class="co-insight">
+      <div class="co-insight-label">Kulcsgondolat</div>
+      <div class="co-insight-text">${esc(d.insight)}</div>
+    </div>` : ''}
+  </div>`;
+}
+
+function renderClosing(d, palKey) {
+  return `<div class="s-slide s-closing" style="${palVars(palKey)}">
+    <div class="cl-top-accent"></div>
+    <div class="cl-heading">${(d.heading||'').replace(/\n/g,'<br>')}</div>
+    <div class="cl-sub">${esc(d.sub||'')}</div>
+    <div class="cl-cta">${esc(d.cta||'')}</div>
+    <div class="cl-handle">${esc(d.handle||'')}</div>
+  </div>`;
+}
+
+function renderSlide(type, palKey) {
+  const d = state.slides[type] || {};
+  switch(type) {
+    case 'cover':   return renderCover(d, palKey);
+    case 'list':    return renderList(d, palKey);
+    case 'quote':   return renderQuote(d, palKey);
+    case 'content': return renderContent(d, palKey);
+    case 'closing': return renderClosing(d, palKey);
+    default:        return '';
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PREVIEW SCALING
+// ═══════════════════════════════════════════════════════════════════════
+function scalePreview() {
+  const area = document.getElementById('preview-area');
+  const wrap = document.getElementById('preview-scale-wrap');
+  const target = document.getElementById('slide-render-target');
+  const shadow = document.getElementById('preview-shadow');
+  if (!area || !wrap || !target) return;
+
+  const aW = area.clientWidth - 48;
+  const aH = area.clientHeight - 48;
+  if (!aW || !aH) return;
+
+  const SLIDE_W = 1080, SLIDE_H = 1350;
+  const scaleX = aW / SLIDE_W;
+  const scaleY = aH / SLIDE_H;
+  const scale = Math.min(scaleX, scaleY);
+
+  const dispW = Math.round(SLIDE_W * scale);
+  const dispH = Math.round(SLIDE_H * scale);
+
+  wrap.style.width = dispW + 'px';
+  wrap.style.height = dispH + 'px';
+  wrap.style.position = 'relative';
+
+  target.style.transform = `scale(${scale})`;
+  target.style.transformOrigin = 'top left';
+
+  shadow.style.transform = `scale(${scale})`;
+  shadow.style.transformOrigin = 'top left';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER MAIN PREVIEW
+// ═══════════════════════════════════════════════════════════════════════
+function renderMainPreview() {
+  const type = SLIDE_TYPES[state.currentSlide];
+  const target = document.getElementById('slide-render-target');
+  if (!target) return;
+  target.innerHTML = renderSlide(type, state.palette);
+  scalePreview();
+  document.getElementById('pt-slide-label').textContent = SLIDE_LABELS[type] || type;
+  document.getElementById('tb-counter').textContent = `Slide ${state.currentSlide+1} of ${SLIDE_TYPES.length}`;
+  document.getElementById('btn-prev').disabled = state.currentSlide === 0;
+  document.getElementById('btn-next').disabled = state.currentSlide === SLIDE_TYPES.length - 1;
+  renderThumbStrip();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// THUMBNAIL STRIP
+// ═══════════════════════════════════════════════════════════════════════
+function renderThumbStrip() {
+  const strip = document.getElementById('thumb-strip');
+  if (!strip) return;
+  strip.innerHTML = SLIDE_TYPES.map((type, i) => {
+    const isActive = i === state.currentSlide;
+    const html = renderSlide(type, state.palette);
+    return `<div class="thumb-item${isActive?' active':''}" data-idx="${i}" title="${SLIDE_LABELS[type]}">
+      <div class="thumb-inner">${html}</div>
+      <div class="thumb-label">${SLIDE_LABELS[type]}</div>
+    </div>`;
+  }).join('');
+  strip.querySelectorAll('.thumb-item').forEach(el => {
+    el.addEventListener('click', () => {
+      state.currentSlide = parseInt(el.dataset.idx);
+      renderAll();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EDITOR FIELDS
+// ═══════════════════════════════════════════════════════════════════════
+const LIMITS = {
+  cover:   {eyebrow:40,title:60,subtitle:120},
+  list:    {heading:60,sub:100,item:70},
+  quote:   {text:180,attribution:50,role:60},
+  content: {tag:40,heading:60,body:300,insight:120},
+  closing: {heading:60,sub:140,cta:40,handle:40},
+};
+
+function counter(val, max) {
+  const len = (val||'').length;
+  const cls = len > max ? 'over' : len > max*0.85 ? 'warn' : '';
+  return `<span class="field-counter${cls?' '+cls:''}">${len}/${max}</span>`;
+}
+
+function renderEditorFields() {
+  const type = SLIDE_TYPES[state.currentSlide];
+  const d = state.slides[type] || {};
+  const lim = LIMITS[type] || {};
+  const el = document.getElementById('editor-fields');
+  if (!el) return;
+
+  let html = `<div class="slide-type-badge">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
+    ${SLIDE_LABELS[type]}
+  </div>`;
+
+  if (type === 'cover') {
+    html += field('Felső sor (eyebrow)', 'eyebrow', 'input', d.eyebrow, lim.eyebrow);
+    html += field('Főcím', 'title', 'textarea', d.title, lim.title, 'Sorok: Enter-rel');
+    html += field('Alcím', 'subtitle', 'textarea', d.subtitle, lim.subtitle);
+  }
+  else if (type === 'list') {
+    html += field('Cím', 'heading', 'textarea', d.heading, lim.heading, 'Sorok: Enter-rel');
+    html += field('Alcím', 'sub', 'input', d.sub, lim.sub);
+    html += `<div class="field-group">
+      <div class="field-label">Pontok <span class="field-counter">${(d.items||[]).length}/6</span></div>
+      <div class="list-items-wrap" id="list-items-wrap">
+        ${(d.items||[]).map((it,i)=>`
+          <div class="list-item-row">
+            <div class="li-num">${i+1}</div>
+            <input class="f-input li-input" data-li="${i}" value="${esc(it)}" placeholder="Pont ${i+1}…" maxlength="${lim.item||70}">
+            <button class="li-del" data-del="${i}" title="Törlés">×</button>
+          </div>`).join('')}
+      </div>
+      ${(d.items||[]).length < 6 ? '<button class="add-item-btn" id="add-item-btn">+ Új pont hozzáadása</button>' : ''}
+    </div>`;
+  }
+  else if (type === 'quote') {
+    html += field('Idézet szövege', 'text', 'textarea', d.text, lim.text);
+    html += field('Forrás / Szerző', 'attribution', 'input', d.attribution, lim.attribution);
+    html += field('Cím / Szerepkör (opcionális)', 'role', 'input', d.role, lim.role);
+  }
+  else if (type === 'content') {
+    html += field('Felirat (tag)', 'tag', 'input', d.tag, lim.tag);
+    html += field('Cím', 'heading', 'textarea', d.heading, lim.heading, 'Sorok: Enter-rel');
+    html += field('Törzsszöveg (**félkövér** támogatott)', 'body', 'textarea', d.body, lim.body);
+    html += field('Kulcsgondolat (opcionális)', 'insight', 'textarea', d.insight, lim.insight);
+  }
+  else if (type === 'closing') {
+    html += field('Főcím', 'heading', 'input', d.heading, lim.heading);
+    html += field('Alcím', 'sub', 'textarea', d.sub, lim.sub);
+    html += field('CTA gomb szöveg', 'cta', 'input', d.cta, lim.cta);
+    html += field('Handle / profil', 'handle', 'input', d.handle, lim.handle);
+  }
+
+  el.innerHTML = html;
+  attachEditorListeners(type);
+}
+
+function field(label, key, inputType, val, maxLen, placeholder) {
+  const lim = maxLen || 999;
+  const ph = placeholder || '';
+  const cnt = counter(val, lim);
+  if (inputType === 'textarea') {
+    return `<div class="field-group">
+      <div class="field-label">${label} ${cnt}</div>
+      <textarea class="f-textarea" data-key="${key}" maxlength="${lim}" placeholder="${esc(ph)}">${esc(val||'')}</textarea>
+    </div>`;
+  }
+  return `<div class="field-group">
+    <div class="field-label">${label} ${cnt}</div>
+    <input class="f-input" type="text" data-key="${key}" maxlength="${lim}" value="${esc(val||'')}" placeholder="${esc(ph||label+'…')}">
+  </div>`;
+}
+
+function attachEditorListeners(type) {
+  // input/textarea fields
+  document.querySelectorAll('#editor-fields [data-key]').forEach(el => {
+    el.addEventListener('input', () => {
+      state.slides[type][el.dataset.key] = el.value;
+      updateCounter(el);
+      renderMainPreview();
+    });
+  });
+  // list item inputs
+  document.querySelectorAll('#editor-fields [data-li]').forEach(el => {
+    el.addEventListener('input', () => {
+      state.slides[type].items[parseInt(el.dataset.li)] = el.value;
+      renderMainPreview();
+    });
+  });
+  // list item delete
+  document.querySelectorAll('#editor-fields [data-del]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.slides[type].items.splice(parseInt(el.dataset.del), 1);
+      renderEditorFields();
+      renderMainPreview();
+    });
+  });
+  // add item
+  const addBtn = document.getElementById('add-item-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      state.slides[type].items.push('');
+      renderEditorFields();
+      renderMainPreview();
+      // focus last input
+      const inputs = document.querySelectorAll('#editor-fields [data-li]');
+      if (inputs.length) inputs[inputs.length-1].focus();
+    });
+  }
+}
+
+function updateCounter(el) {
+  const label = el.closest('.field-group')?.querySelector('.field-label');
+  if (!label) return;
+  const max = parseInt(el.maxLength) || 999;
+  const len = el.value.length;
+  let span = label.querySelector('.field-counter');
+  if (!span) return;
+  span.textContent = `${len}/${max}`;
+  span.className = 'field-counter' + (len > max ? ' over' : len > max*0.85 ? ' warn' : '');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SLIDE NAV
+// ═══════════════════════════════════════════════════════════════════════
+function renderSlideNav() {
+  const nav = document.getElementById('slide-nav');
+  if (!nav) return;
+  nav.innerHTML = SLIDE_TYPES.map((t,i) => `
+    <button class="snav-btn${i===state.currentSlide?' active':''}" data-idx="${i}">${SLIDE_LABELS[t]}</button>
+  `).join('');
+  nav.querySelectorAll('.snav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.currentSlide = parseInt(btn.dataset.idx);
+      renderAll();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PALETTE SWATCHES
+// ═══════════════════════════════════════════════════════════════════════
+function renderPaletteRow() {
+  const row = document.getElementById('pal-row');
+  if (!row) return;
+  row.innerHTML = PAL_DISPLAY.map(p => `
+    <div class="pal-swatch${p.key===state.palette?' active':''}"
+      data-pal="${p.key}"
+      style="background:${p.color}"
+      title="${p.key}">
+    </div>
+  `).join('');
+  row.querySelectorAll('.pal-swatch').forEach(el => {
+    el.addEventListener('click', () => {
+      state.palette = el.dataset.pal;
+      renderPaletteRow();
+      renderMainPreview();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderSlideNav();
+  renderEditorFields();
+  renderPaletteRow();
+  renderMainPreview();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAVIGATION BUTTONS
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById('btn-prev').addEventListener('click', () => {
+  if (state.currentSlide > 0) { state.currentSlide--; renderAll(); }
+});
+document.getElementById('btn-next').addEventListener('click', () => {
+  if (state.currentSlide < SLIDE_TYPES.length-1) { state.currentSlide++; renderAll(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════════════
+
+async function slideToCanvas(type) {
+  const container = document.createElement('div');
+  container.style.cssText = `
+    position:fixed;left:-9999px;top:0;
+    width:1080px;height:1350px;overflow:hidden;
+    font-family:'Inter',sans-serif;
+    background:${PALETTES[state.palette].bg};
+  `;
+  container.innerHTML = renderSlide(type, state.palette);
+  // Copy all font-face styles
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&display=swap');
+  `;
+  container.appendChild(styleEl);
+  document.body.appendChild(container);
+
+  // Wait for fonts
+  try { await document.fonts.ready; } catch(e) {}
+
+  const canvas = await html2canvas(container, {
+    width: 1080,
+    height: 1350,
+    scale: 1,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: PALETTES[state.palette].bg,
+    logging: false,
+  });
+  document.body.removeChild(container);
+  return canvas;
+}
+
+function downloadCanvas(canvas, filename) {
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = filename;
+  a.click();
+}
+
+document.getElementById('btn-export-single').addEventListener('click', async () => {
+  const type = SLIDE_TYPES[state.currentSlide];
+  try {
+    toast('Rendering…');
+    const canvas = await slideToCanvas(type);
+    downloadCanvas(canvas, `slide-${state.currentSlide+1}-${type}.png`);
+    toast('Exported!');
+  } catch(e) {
+    toast('Export failed: '+e.message);
+    console.error(e);
+  }
+});
+
+document.getElementById('btn-export-all').addEventListener('click', async () => {
+  const overlay = document.getElementById('export-overlay');
+  const msg = document.getElementById('export-msg');
+  const bar = document.getElementById('export-bar');
+  const closeBtn = document.getElementById('export-close-btn');
+  overlay.classList.add('show');
+  closeBtn.style.display = 'none';
+
+  for (let i = 0; i < SLIDE_TYPES.length; i++) {
+    const type = SLIDE_TYPES[i];
+    msg.textContent = `Rendering slide ${i+1} of ${SLIDE_TYPES.length}: ${SLIDE_LABELS[type]}…`;
+    bar.style.width = `${(i / SLIDE_TYPES.length) * 100}%`;
+    try {
+      const canvas = await slideToCanvas(type);
+      downloadCanvas(canvas, `slide-${i+1}-${type}.png`);
+    } catch(e) {
+      console.error('Slide export error', type, e);
+    }
+    // small delay so browser can breathe
+    await new Promise(r => setTimeout(r, 200));
+  }
+  bar.style.width = '100%';
+  msg.textContent = `All ${SLIDE_TYPES.length} slides exported!`;
+  closeBtn.style.display = 'block';
+});
+
+document.getElementById('export-close-btn').addEventListener('click', () => {
+  document.getElementById('export-overlay').classList.remove('show');
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RESIZE HANDLER
+// ═══════════════════════════════════════════════════════════════════════
+window.addEventListener('resize', scalePreview);
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
+requestAnimationFrame(() => {
+  renderAll();
+});
+</script>
+</body>
+</html>
